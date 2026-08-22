@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Eye, EyeOff, Lock, ShieldCheck } from 'lucide-react';
+import { User, Eye, EyeOff, Lock } from 'lucide-react';
 
 interface LoginViewProps {
   onLoginSuccess: (type: 'employee' | 'admin') => void;
@@ -17,13 +17,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const handleTabChange = (type: 'employee' | 'admin') => {
     setLoginType(type);
-    if (type === 'admin') {
-      setLoginId('ADMIN001');
-      setPassword('admin123');
-    } else {
-      setLoginId('');
-      setPassword('');
-    }
+    setLoginId('');
+    setPassword('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,29 +54,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
               Admin Login
             </button>
           </div>
-
-          {/* Admin Predefined Hint Banner */}
-          {loginType === 'admin' && (
-            <div
-              style={{
-                backgroundColor: '#F3E8FF',
-                border: '1px solid #DDD6FE',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                marginBottom: '16px',
-                fontSize: '12px',
-                color: '#6B21A8',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <ShieldCheck size={18} color="#6D28D9" />
-              <div>
-                <strong>Predefined Admin Access:</strong> ID: <code>ADMIN001</code> | Pass: <code>admin123</code>
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">

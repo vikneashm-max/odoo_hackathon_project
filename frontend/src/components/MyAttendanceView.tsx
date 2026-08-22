@@ -10,7 +10,12 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
   const [inOutToggle, setInOutToggle] = useState<'In' | 'Out'>('In');
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
 
-  const months = ['October 2023', 'November 2023', 'December 2023'];
+  const now = new Date();
+  const formatMonth = (monthOffset: number) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+  const months = [formatMonth(-1), formatMonth(0), formatMonth(1)];
 
   const handlePrevMonth = () => {
     setSelectedMonthIndex((prev) => (prev > 0 ? prev - 1 : months.length - 1));
@@ -22,6 +27,21 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
 
   const presentCount = personalRecords.filter((r) => r.status === 'Present').length;
   const leaveCount = personalRecords.filter((r) => r.status === 'Leave').length;
+
+  const calculateAvgHours = () => {
+    if (personalRecords.length === 0) return '0h 00m';
+    const totalMinutes = personalRecords.reduce((acc, r) => {
+      if (r.workHours && r.workHours.includes(':')) {
+        const [h, m] = r.workHours.split(':').map(Number);
+        return acc + (h || 0) * 60 + (m || 0);
+      }
+      return acc + 480; // default 8h if active/present
+    }, 0);
+    const avgMin = Math.round(totalMinutes / personalRecords.length);
+    const hours = Math.floor(avgMin / 60);
+    const mins = avgMin % 60;
+    return `${hours}h ${mins.toString().padStart(2, '0')}m`;
+  };
 
   return (
     <div className="my-attendance-page">
@@ -82,7 +102,7 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
         </div>
         <div className="stat-card">
           <span className="stat-label">Avg. Work Hours</span>
-          <span className="stat-value">{personalRecords.length > 0 ? '8h 15m' : '0h 00m'}</span>
+          <span className="stat-value">{calculateAvgHours()}</span>
         </div>
       </div>
 

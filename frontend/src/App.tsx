@@ -24,17 +24,17 @@ import './App.css';
 function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [userRole, setUserRole] = useState<UserRole>('employee');
-  const [currentUserId, setCurrentUserId] = useState<string>('usr-emp-default');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentEmployee, setCurrentEmployee] = useState<Employee>({
-    id: 'usr-emp-default',
-    loginId: 'IN-JD-2026-0001',
-    fullName: 'John Doe',
-    email: 'john.doe@dayflow.com',
-    phone: '+1 (555) 234-5678',
-    address: '123 Tech Street, Suite 400',
-    department: 'Engineering',
-    jobTitle: 'Software Engineer',
-    joinDate: '2026-01-15',
+    id: '',
+    loginId: '',
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    department: '',
+    jobTitle: '',
+    joinDate: '',
     status: 'green',
   });
 

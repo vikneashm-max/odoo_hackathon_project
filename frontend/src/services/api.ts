@@ -135,23 +135,7 @@ export const apiService = {
     }
 
     if (!foundUser) {
-      foundUser = {
-        id: 'usr-emp-001',
-        loginId: 'IN-JD-2026-0001',
-        fullName: 'John Doe',
-        name: 'John Doe',
-        email: lower || 'john.doe@dayflow.com',
-        phone: '+1 (555) 234-5678',
-        address: '123 Tech Street, Suite 400',
-        department: 'Engineering',
-        jobTitle: 'Software Engineer',
-        role: 'Employee',
-        countryCode: 'IN',
-        joinDate: '2026-01-15',
-        joinYear: 2026,
-        avatarInitials: 'JD',
-        status: 'green',
-      };
+      throw new Error('Invalid credentials or user not found. Please register an account.');
     }
 
     localStorage.setItem(STORAGE_KEYS.TOKEN, 'mock-jwt-token-employee');
@@ -178,7 +162,7 @@ export const apiService = {
 
   createEmployee: async (empData: any) => {
     const employees = getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
-    const fullName = empData.fullName || empData.name || 'New Employee';
+    const fullName = empData.fullName || empData.name || 'Employee';
     const nameParts = fullName.trim().split(' ');
     const fName = nameParts[0];
     const lName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : 'E';
@@ -194,11 +178,11 @@ export const apiService = {
       fullName,
       name: fullName,
       email: empData.email || `${fName.toLowerCase()}.${lName.toLowerCase()}@dayflow.com`,
-      phone: empData.phone || '+1 (555) 000-1234',
-      address: empData.address || '123 Tech Park',
+      phone: empData.phone || '',
+      address: empData.address || '',
       department: empData.department || 'Engineering',
-      jobTitle: empData.jobTitle || empData.role || 'Senior Developer',
-      role: empData.jobTitle || empData.role || 'Senior Developer',
+      jobTitle: empData.jobTitle || empData.role || 'Staff Member',
+      role: empData.jobTitle || empData.role || 'Staff Member',
       countryCode: empData.countryCode || 'IN',
       joinDate: new Date().toISOString().split('T')[0],
       joinYear,
@@ -257,9 +241,10 @@ export const apiService = {
 
   applyLeave: async (data: any) => {
     const leaves = getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
+    const currentUser = await apiService.getCurrentUser();
     const newLeave: LeaveRequestItem = {
       id: `leave-${Date.now()}`,
-      employeeName: 'John Doe',
+      employeeName: data.employeeName || currentUser?.fullName || 'Employee',
       leaveType: data.leaveType || 'paid',
       startDate: data.startDate,
       endDate: data.endDate,

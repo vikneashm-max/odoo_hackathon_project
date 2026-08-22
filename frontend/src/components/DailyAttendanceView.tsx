@@ -9,9 +9,15 @@ interface DailyAttendanceViewProps {
 export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ records }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'Day' | 'Month'>('Day');
-  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(1);
+  const today = new Date();
+  const formatDate = (dateOffset: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + dateOffset);
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
-  const dates = ['22 October 2024', '23 October 2024', '24 October 2024'];
+  const dates = [formatDate(-1), formatDate(0), formatDate(1)];
 
   const filteredRecords = (records || []).filter(
     (rec) =>
