@@ -1,4 +1,4 @@
-package com.backend.hrmanagement.entity;
+package com.dayflow.entity.enums;
 
 public enum AttendanceStatus {
     PRESENT,

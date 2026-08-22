@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { UploadCloud, Eye, EyeOff } from 'lucide-react';
+import { UploadCloud, Eye, EyeOff, LayoutDashboard } from 'lucide-react';
+
+import { apiService } from '../services/api';
 
 interface SignUpViewProps {
-  onSignUpSuccess: () => void;
+  onSignUpSuccess: (user: any) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -17,14 +19,25 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      setErrorMsg('Passwords do not match');
       return;
     }
-    onSignUpSuccess();
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await apiService.createEmployee({ fullName, email, phone, password });
+      onSignUpSuccess(res.employee || res.user || { fullName, email, phone, role: 'employee' });
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,6 +46,9 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
         <div className="auth-box">
           {/* Header */}
           <div className="auth-header">
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(124, 58, 237, 0.12)', padding: '12px', borderRadius: '16px', color: '#6d28d9', marginBottom: '14px', border: '1px solid rgba(167, 139, 250, 0.3)', boxShadow: '0 8px 20px rgba(109, 40, 217, 0.12)' }}>
+              <LayoutDashboard size={30} />
+            </div>
             <h1 className="auth-logo font-serif">Dayflow HRMS</h1>
             <p className="auth-subtitle">Create your employee account</p>
           </div>
@@ -45,6 +61,23 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
             </label>
             <span className="upload-logo-label">Upload Profile Photo</span>
           </div>
+
+          {errorMsg && (
+            <div
+              style={{
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '16px',
+                textAlign: 'center',
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -125,8 +158,8 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               </div>
             </div>
 
-            <button type="submit" className="btn-primary auth-submit-btn">
-              Create Employee Account
+            <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Employee Account'}
             </button>
           </form>
 

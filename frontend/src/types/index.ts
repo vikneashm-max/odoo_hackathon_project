@@ -57,7 +57,7 @@ export interface DailyAttendanceRecord {
 export interface PersonalAttendanceRecord {
   id: string;
   date: string;
-  status: 'Present' | 'Leave' | 'Absent';
+  status: 'Present' | 'Leave' | 'Absent' | 'PRESENT' | 'LEAVE' | 'ABSENT';
   checkIn: string;
   checkOut: string;
   workHours: string;

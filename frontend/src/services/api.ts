@@ -52,8 +52,27 @@ function setStoredArray<T>(key: string, data: T[]) {
   }
 }
 
+const API_BASE_URL = 'http://localhost:8080/api';
+
 export const apiService = {
   registerAdmin: async (data: { companyName: string; name: string; email: string; phone: string; password?: string; countryCode?: string }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        localStorage.setItem(STORAGE_KEYS.TOKEN, result.token || 'dayflow-jwt-token-admin');
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...result.user, userRole: 'admin' }));
+        return result;
+      }
+    } catch (err) {
+      console.warn('Backend API unavailable, using local session fallback.', err);
+    }
+
     const nameParts = (data.name || 'Admin User').trim().split(' ');
     const fName = nameParts[0];
     const lName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : 'A';
@@ -61,7 +80,7 @@ export const apiService = {
     const loginId = generateLoginId(data.countryCode || 'IN', fName, lName, joinYear, 1);
 
     const adminUser: Employee = {
-      id: `usr-admin-${Date.now()}`,
+      id: '1',
       loginId,
       fullName: data.name,
       name: data.name,
@@ -76,30 +95,48 @@ export const apiService = {
       joinYear,
       avatarInitials: data.name.slice(0, 2).toUpperCase(),
       status: 'green',
-      salary: {
-        grossMonthly: 120000,
-        basic: 60000,
-        hra: 24000,
-        standardAllowance: 10000,
-        performanceBonus: 12000,
-        lta: 7000,
-        fixedAllowance: 7000,
-        pfRate: 12,
-        professionalTax: 200,
-      },
     };
 
-    localStorage.setItem(STORAGE_KEYS.TOKEN, 'mock-jwt-token-admin');
+    localStorage.setItem(STORAGE_KEYS.TOKEN, 'dayflow-jwt-token-admin');
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...adminUser, userRole: 'admin' }));
 
     return {
       message: 'Admin account and company registered successfully.',
-      token: 'mock-jwt-token-admin',
+      token: 'dayflow-jwt-token-admin',
       user: adminUser,
     };
   },
 
-  login: async (loginIdOrEmail: string, _password?: string) => {
+  login: async (loginIdOrEmail: string, password?: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginIdOrEmail, password }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const role = (result.user?.role || 'employee').toLowerCase();
+        localStorage.setItem(STORAGE_KEYS.TOKEN, result.token);
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...result.user, userRole: role, role }));
+        return {
+          token: result.token,
+          user: { ...result.user, userRole: role, role },
+        };
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        if (errJson.message) {
+          throw new Error(errJson.message);
+        }
+      }
+    } catch (err: any) {
+      if (err.message && !err.message.includes('fetch')) {
+        throw err;
+      }
+      console.warn('Backend server connection fallback to local session.');
+    }
+
     const lower = (loginIdOrEmail || '').trim().toLowerCase();
     const employees = getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
 
@@ -109,7 +146,7 @@ export const apiService = {
 
     if (lower === 'admin001' || lower === 'admin@dayflow.com' || lower.includes('admin')) {
       const adminUser: Employee = {
-        id: 'usr-admin-001',
+        id: '1',
         loginId: 'ADMIN001',
         fullName: 'System Administrator',
         name: 'System Administrator',
@@ -117,7 +154,7 @@ export const apiService = {
         phone: '+91 98765 43210',
         address: 'Company Headquarters',
         department: 'Executive Management',
-        jobTitle: 'Company Admin / HR Officer',
+        jobTitle: 'Company Admin / HR Director',
         role: 'Admin',
         countryCode: 'IN',
         joinDate: '2026-01-01',
@@ -125,25 +162,26 @@ export const apiService = {
         avatarInitials: 'AD',
         status: 'green',
       };
-      localStorage.setItem(STORAGE_KEYS.TOKEN, 'mock-jwt-token-admin');
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...adminUser, userRole: 'admin' }));
+      localStorage.setItem(STORAGE_KEYS.TOKEN, 'dayflow-jwt-token-admin');
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...adminUser, userRole: 'admin', role: 'admin' }));
 
       return {
-        token: 'mock-jwt-token-admin',
-        user: { ...adminUser, role: 'admin' },
+        token: 'dayflow-jwt-token-admin',
+        user: { ...adminUser, role: 'admin', userRole: 'admin' },
       };
     }
 
     if (!foundUser) {
-      throw new Error('Invalid credentials or user not found. Please register an account.');
+      throw new Error('Invalid credentials or user not found. Please register or sign in with your generated Login ID / Email.');
     }
 
-    localStorage.setItem(STORAGE_KEYS.TOKEN, 'mock-jwt-token-employee');
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...foundUser, userRole: 'employee' }));
+    const role = (foundUser.role || 'employee').toLowerCase();
+    localStorage.setItem(STORAGE_KEYS.TOKEN, 'dayflow-jwt-token-employee');
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({ ...foundUser, userRole: role, role }));
 
     return {
-      token: 'mock-jwt-token-employee',
-      user: { ...foundUser, role: 'employee' },
+      token: 'dayflow-jwt-token-employee',
+      user: { ...foundUser, role, userRole: role },
     };
   },
 
@@ -157,10 +195,34 @@ export const apiService = {
   },
 
   getEmployees: async (): Promise<Employee[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employees`);
+      if (response.ok) {
+        const data = await response.json();
+        return data as Employee[];
+      }
+    } catch (err) {
+      console.warn('Backend API getEmployees fallback to local store.');
+    }
     return getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
   },
 
   createEmployee: async (empData: any) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employees`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(empData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result;
+      }
+    } catch (err) {
+      console.warn('Backend API createEmployee fallback to local store.');
+    }
+
     const employees = getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
     const fullName = empData.fullName || empData.name || 'Employee';
     const nameParts = fullName.trim().split(' ');
@@ -212,6 +274,21 @@ export const apiService = {
   },
 
   updateEmployeeProfile: async (id: string, updateData: Partial<Employee>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result;
+      }
+    } catch (err) {
+      console.warn('Backend API updateEmployeeProfile fallback.');
+    }
+
     const employees = getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
     const index = employees.findIndex((e) => e.id === id);
 
@@ -223,23 +300,123 @@ export const apiService = {
     return { message: 'Profile updated successfully.', employee: updateData };
   },
 
+  getAttendanceStatus: async (empId?: string): Promise<{ isCheckedIn: boolean; checkInTime?: string }> => {
+    try {
+      let id = empId;
+      if (!id) {
+        const user = await apiService.getCurrentUser();
+        id = user?.id;
+      }
+      if (!id) return { isCheckedIn: false };
+      const response = await fetch(`${API_BASE_URL}/attendance/status/${id}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API getAttendanceStatus fallback.');
+    }
+    return { isCheckedIn: false };
+  },
+
   checkIn: async () => {
+    try {
+      const user = await apiService.getCurrentUser();
+      const empId = user && user.id ? user.id : 1;
+      const response = await fetch(`${API_BASE_URL}/attendance/check-in`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: empId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return { message: result.message, userStatus: 'green' };
+      }
+    } catch (err) {
+      console.warn('Backend API checkIn fallback.');
+    }
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return { message: `Checked in at ${timeStr}`, userStatus: 'green' };
   },
 
   checkOut: async () => {
+    try {
+      const user = await apiService.getCurrentUser();
+      const empId = user && user.id ? user.id : 1;
+      const response = await fetch(`${API_BASE_URL}/attendance/check-out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: empId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return { message: result.message, userStatus: 'yellow' };
+      }
+    } catch (err) {
+      console.warn('Backend API checkOut fallback.');
+    }
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return { message: `Checked out at ${timeStr}`, userStatus: 'yellow' };
   },
 
-  getAttendanceLogs: async () => {
+  getAttendanceLogs: async (empId?: string) => {
+    try {
+      let id = empId;
+      if (!id) {
+        const user = await apiService.getCurrentUser();
+        id = user?.id;
+      }
+      if (!id) id = '1';
+      const response = await fetch(`${API_BASE_URL}/attendance/employee/${id}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API getAttendanceLogs fallback.');
+    }
     return { logs: [], payableDaysInfo: { payableDays: 22 } };
   },
 
+  getDailyAttendance: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/daily`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API getDailyAttendance fallback.');
+    }
+    return [];
+  },
+
   applyLeave: async (data: any) => {
+    try {
+      const user = await apiService.getCurrentUser();
+      const response = await fetch(`${API_BASE_URL}/timeoff`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: user?.id || 1,
+          leaveType: data.leaveType || 'paid',
+          startDate: data.startDate,
+          endDate: data.endDate,
+          reason: data.reason || '',
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result;
+      }
+    } catch (err) {
+      console.warn('Backend API applyLeave fallback.');
+    }
+
     const leaves = getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
     const currentUser = await apiService.getCurrentUser();
     const newLeave: LeaveRequestItem = {
@@ -261,6 +438,17 @@ export const apiService = {
   },
 
   approveLeave: async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/timeoff/${id}/approve`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API approveLeave fallback.');
+    }
+
     const leaves = getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
     const index = leaves.findIndex((l) => l.id === id);
     if (index !== -1) {
@@ -271,6 +459,17 @@ export const apiService = {
   },
 
   rejectLeave: async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/timeoff/${id}/reject`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API rejectLeave fallback.');
+    }
+
     const leaves = getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
     const index = leaves.findIndex((l) => l.id === id);
     if (index !== -1) {
@@ -281,10 +480,32 @@ export const apiService = {
   },
 
   getLeaveRequests: async (): Promise<LeaveRequestItem[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/timeoff`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API getLeaveRequests fallback.');
+    }
     return getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
   },
 
   getPayrollComponents: async (): Promise<{ components: SalaryComponent[]; settings: any }> => {
+    try {
+      const user = await apiService.getCurrentUser();
+      const response = await fetch(`${API_BASE_URL}/payroll/structure/${user?.id || 1}`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          components: data.components || defaultSalaryComponents,
+          settings: { pfRate: data.pfRate || 12, professionalTax: data.professionalTax || 200 },
+        };
+      }
+    } catch (err) {
+      console.warn('Backend API getPayrollComponents fallback.');
+    }
+
     return {
       components: defaultSalaryComponents,
       settings: { pfRate: 12, professionalTax: 200 },
@@ -292,6 +513,20 @@ export const apiService = {
   },
 
   updateSalary: async (employeeId: string, salaryData: Partial<SalaryStructure>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/payroll/structure/${employeeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(salaryData),
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Backend API updateSalary fallback.');
+    }
+
     const employees = getStoredArray<Employee>(STORAGE_KEYS.EMPLOYEES);
     const index = employees.findIndex((e) => e.id === employeeId);
     if (index !== -1) {
@@ -302,8 +537,8 @@ export const apiService = {
   },
 
   getNotifications: async (): Promise<{ pendingCount: number; hasUnread: boolean }> => {
-    const leaves = getStoredArray<LeaveRequestItem>(STORAGE_KEYS.LEAVES);
-    const pendingCount = leaves.filter((l) => l.status === 'Pending').length;
+    const leaves = await apiService.getLeaveRequests();
+    const pendingCount = leaves.filter((l) => (l.status || '').toLowerCase() === 'pending').length;
     return { pendingCount, hasUnread: pendingCount > 0 };
   },
 };

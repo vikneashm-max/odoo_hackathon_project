@@ -149,10 +149,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               setActiveTab('profile');
             }}
           >
-            <div className="avatar-circle purple-bg">
-              <span>AD</span>
+            <div className="avatar-wrapper">
+              <div className="avatar-circle purple-bg">
+                <span>AD</span>
+              </div>
+              <span className="avatar-status-dot"></span>
             </div>
-            <span className="avatar-status-dot"></span>
           </div>
 
           <button className="icon-btn" title="Sign Out" onClick={onLogout} style={{ marginLeft: '4px' }}>

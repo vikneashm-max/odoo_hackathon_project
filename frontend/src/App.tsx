@@ -82,13 +82,29 @@ function App() {
     checkSession();
   }, []);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (empId?: string) => {
     try {
+      const activeId = empId || currentUserId;
       const emps = await apiService.getEmployees();
       if (emps && emps.length > 0) setEmployees(emps);
 
       const leaves = await apiService.getLeaveRequests();
       if (leaves) setLeaveRequests(leaves);
+
+      const daily = await apiService.getDailyAttendance();
+      if (daily && daily.length > 0) {
+        setDailyAttendance(daily);
+      }
+
+      const attLogs = await apiService.getAttendanceLogs(activeId);
+      if (attLogs && attLogs.logs) {
+        setPersonalAttendance(attLogs.logs);
+      }
+
+      const statusRes = await apiService.getAttendanceStatus(activeId);
+      if (statusRes && typeof statusRes.isCheckedIn === 'boolean') {
+        setIsCheckedIn(statusRes.isCheckedIn);
+      }
 
       const payroll = await apiService.getPayrollComponents();
       if (payroll && payroll.components) setSalaryComponents(payroll.components);
@@ -102,17 +118,26 @@ function App() {
   };
 
   // Auth Handlers
-  const handleLoginSuccess = async (role: UserRole) => {
+  const handleLoginSuccess = async (role: UserRole, user: any) => {
+    const activeUser = user || {};
+    const userId = String(activeUser.id || '1');
     setUserRole(role);
+    setCurrentUserId(userId);
+    setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
-    showToast(`Signed in successfully as ${role === 'admin' ? 'Administrator' : 'Employee'}.`);
-    await fetchInitialData();
+    showToast(`Signed in successfully as ${activeUser.fullName || activeUser.name || 'User'}.`);
+    await fetchInitialData(userId);
   };
 
-  const handleSignUpSuccess = () => {
+  const handleSignUpSuccess = async (user: any) => {
+    const activeUser = user || {};
+    const userId = String(activeUser.id || '1');
     setUserRole('employee');
+    setCurrentUserId(userId);
+    setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
     showToast('Employee account created successfully! Welcome to Dayflow HRMS.');
+    await fetchInitialData(userId);
   };
 
   const handleLogout = () => {

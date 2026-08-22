@@ -11,50 +11,70 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
   balance,
   onNewRequestClick,
 }) => {
-  const [monthIndex, setMonthIndex] = useState<number>(0);
+  const [monthOffset, setMonthOffset] = useState<number>(0);
   const now = new Date();
-  const formatMonth = (offset: number) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
-  const months = [formatMonth(-1), formatMonth(0), formatMonth(1)];
+  
+  const currentMonthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const monthName = currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const calendarTiles = [
-    { date: 29, isOtherMonth: true, isWeekend: false, status: 'normal' },
-    { date: 30, isOtherMonth: true, isWeekend: false, status: 'normal' },
-    { date: 1, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 2, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 3, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 4, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 5, isOtherMonth: false, isWeekend: true, status: 'weekend' },
+  // Dynamic calendar calculation
+  const year = currentMonthDate.getFullYear();
+  const month = currentMonthDate.getMonth();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
 
-    { date: 6, isOtherMonth: false, isWeekend: true, status: 'weekend' },
-    { date: 7, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 8, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 9, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 10, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 11, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 12, isOtherMonth: false, isWeekend: true, status: 'weekend' },
+  const calendarTiles = [];
 
-    { date: 13, isOtherMonth: false, isWeekend: true, status: 'weekend' },
-    { date: 14, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 15, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 16, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 17, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 18, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 19, isOtherMonth: false, isWeekend: true, status: 'weekend' },
+  // Previous month trailing days
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    calendarTiles.push({
+      date: prevMonthDays - i,
+      isOtherMonth: true,
+      isWeekend: false,
+      status: 'normal',
+    });
+  }
 
-    { date: 20, isOtherMonth: false, isWeekend: true, status: 'weekend' },
-  ];
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayDate = new Date(year, month, d);
+    const dayOfWeek = dayDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    let status = 'normal';
+    if (isWeekend) {
+      status = 'weekend';
+    }
+
+    calendarTiles.push({
+      date: d,
+      fullDateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      isOtherMonth: false,
+      isWeekend,
+      status,
+    });
+  }
+
+  // Next month leading days to complete grid
+  const remaining = 42 - calendarTiles.length;
+  for (let i = 1; i <= remaining; i++) {
+    calendarTiles.push({
+      date: i,
+      isOtherMonth: true,
+      isWeekend: false,
+      status: 'normal',
+    });
+  }
 
   const handlePrevMonth = () => {
-    setMonthIndex((prev) => (prev > 0 ? prev - 1 : months.length - 1));
+    setMonthOffset((prev) => prev - 1);
   };
 
   const handleNextMonth = () => {
-    setMonthIndex((prev) => (prev < months.length - 1 ? prev + 1 : 0));
+    setMonthOffset((prev) => prev + 1);
   };
 
   return (
@@ -80,7 +100,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
           <div className="leave-card-info">
             <span className="leave-card-title">Paid Time Off</span>
             <div className="leave-card-value">
-              <span>{balance.paidTimeOff.toString().padStart(2, '0')}</span>
+              <span>{(balance.paidTimeOff || 14).toString().padStart(2, '0')}</span>
               <span className="leave-card-subtitle">Days Available</span>
             </div>
           </div>
@@ -93,7 +113,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
           <div className="leave-card-info">
             <span className="leave-card-title">Sick Time Off</span>
             <div className="leave-card-value">
-              <span>{balance.sickTimeOff.toString().padStart(2, '0')}</span>
+              <span>{(balance.sickTimeOff || 7).toString().padStart(2, '0')}</span>
               <span className="leave-card-subtitle">Days Available</span>
             </div>
           </div>
@@ -103,7 +123,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
       {/* Calendar View Card */}
       <div className="calendar-card">
         <div className="calendar-header">
-          <h2 className="calendar-title">{months[monthIndex]}</h2>
+          <h2 className="calendar-title">{monthName}</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
               <ChevronLeft size={18} />
@@ -130,7 +150,17 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
             else if (tile.isWeekend) tileClass += ' weekend-tile';
 
             return (
-              <div className={tileClass} key={idx}>
+              <div 
+                className={tileClass} 
+                key={idx}
+                onClick={() => {
+                  if (!tile.isOtherMonth) {
+                    onNewRequestClick();
+                  }
+                }}
+                style={{ cursor: tile.isOtherMonth ? 'default' : 'pointer' }}
+                title={!tile.isOtherMonth ? `Click to request time off starting ${tile.fullDateStr}` : ''}
+              >
                 <span>{tile.date}</span>
                 {(tile.status === 'approved' || tile.status === 'pending') && (
                   <span className="tile-dot"></span>

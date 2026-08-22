@@ -8,36 +8,37 @@ interface MyAttendanceViewProps {
 
 export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalRecords }) => {
   const [inOutToggle, setInOutToggle] = useState<'In' | 'Out'>('In');
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
+  const [monthOffset, setMonthOffset] = useState<number>(0);
 
   const now = new Date();
-  const formatMonth = (monthOffset: number) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
-  const months = [formatMonth(-1), formatMonth(0), formatMonth(1)];
+  const currentMonthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const currentMonthLabel = currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const handlePrevMonth = () => {
-    setSelectedMonthIndex((prev) => (prev > 0 ? prev - 1 : months.length - 1));
+    setMonthOffset((prev) => prev - 1);
   };
 
   const handleNextMonth = () => {
-    setSelectedMonthIndex((prev) => (prev < months.length - 1 ? prev + 1 : 0));
+    setMonthOffset((prev) => prev + 1);
   };
 
-  const presentCount = personalRecords.filter((r) => r.status === 'Present').length;
-  const leaveCount = personalRecords.filter((r) => r.status === 'Leave').length;
+  const safeRecords = personalRecords || [];
+  const presentCount = safeRecords.filter((r) => r.status === 'PRESENT' || r.status === 'Present').length;
+  const leaveCount = safeRecords.filter((r) => r.status === 'LEAVE' || r.status === 'Leave').length;
 
   const calculateAvgHours = () => {
-    if (personalRecords.length === 0) return '0h 00m';
-    const totalMinutes = personalRecords.reduce((acc, r) => {
-      if (r.workHours && r.workHours.includes(':')) {
+    if (safeRecords.length === 0) return '0h 00m';
+    const totalMinutes = safeRecords.reduce((acc, r) => {
+      if (r.workHours && typeof r.workHours === 'string' && r.workHours.includes(':')) {
         const [h, m] = r.workHours.split(':').map(Number);
         return acc + (h || 0) * 60 + (m || 0);
+      } else if (r.workHours && typeof r.workHours === 'string' && r.workHours.includes('h')) {
+        const h = parseFloat(r.workHours.replace('h', '')) || 8;
+        return acc + h * 60;
       }
-      return acc + 480; // default 8h if active/present
+      return acc + 480; // default 8h
     }, 0);
-    const avgMin = Math.round(totalMinutes / personalRecords.length);
+    const avgMin = Math.round(totalMinutes / safeRecords.length);
     const hours = Math.floor(avgMin / 60);
     const mins = avgMin % 60;
     return `${hours}h ${mins.toString().padStart(2, '0')}m`;
@@ -75,8 +76,8 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
               <ChevronLeft size={16} />
             </button>
 
-            <span className="date-nav-label" style={{ minWidth: '100px', textAlign: 'center' }}>
-              {months[selectedMonthIndex]}
+            <span className="date-nav-label" style={{ minWidth: '120px', textAlign: 'center' }}>
+              {currentMonthLabel}
             </span>
 
             <button className="date-nav-arrow" onClick={handleNextMonth} title="Next Month">
@@ -98,7 +99,7 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
         </div>
         <div className="stat-card">
           <span className="stat-label">Total Working Days</span>
-          <span className="stat-value">{personalRecords.length}</span>
+          <span className="stat-value">{safeRecords.length}</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Avg. Work Hours</span>
@@ -121,12 +122,12 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
               </tr>
             </thead>
             <tbody>
-              {personalRecords.length > 0 ? (
-                personalRecords.map((row) => (
+              {safeRecords.length > 0 ? (
+                safeRecords.map((row) => (
                   <tr key={row.id}>
                     <td style={{ fontWeight: 600, color: '#111827' }}>{row.date}</td>
                     <td>
-                      {row.status === 'Present' ? (
+                      {row.status === 'Present' || row.status === 'PRESENT' ? (
                         <span className="badge-dot">
                           <span className="dot-green"></span>
                           <span>Present</span>

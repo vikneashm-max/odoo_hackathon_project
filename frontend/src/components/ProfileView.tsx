@@ -69,23 +69,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       return;
     }
 
+    const updatePayload: Partial<Employee> = {
+      phone,
+      address,
+      avatarUrl,
+      department,
+      jobTitle,
+    };
+
     if (isAdmin) {
-      await onSaveProfile(employee.id, {
-        fullName,
-        email,
-        phone,
-        address,
-        avatarUrl,
-        department,
-        jobTitle,
-      });
-    } else {
-      await onSaveProfile(employee.id, {
-        phone,
-        address,
-        avatarUrl,
-      });
+      updatePayload.fullName = fullName;
+      updatePayload.email = email;
     }
+
+    await onSaveProfile(employee.id, updatePayload);
   };
 
   const handleSalarySubmit = async (e: React.FormEvent) => {
@@ -253,7 +250,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             {(isSelf || isAdmin) && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '20px' }}>
                 <button type="submit" className="btn-primary">
                   <Save size={16} />
                   <span>Save Personal Details</span>
@@ -275,24 +272,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
 
               <div className="form-group">
-                <label>Department {!isAdmin && <Lock size={12} color="#9ca3af" />}</label>
+                <label>Department</label>
                 <input
                   type="text"
                   className="form-input"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  disabled={!isAdmin}
+                  disabled={!isSelf && !isAdmin}
                 />
               </div>
 
               <div className="form-group">
-                <label>Job Title / Role {!isAdmin && <Lock size={12} color="#9ca3af" />}</label>
+                <label>Job Title / Role</label>
                 <input
                   type="text"
                   className="form-input"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  disabled={!isAdmin}
+                  disabled={!isSelf && !isAdmin}
                 />
               </div>
 
@@ -302,8 +299,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            {isAdmin && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+            {(isSelf || isAdmin) && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '20px' }}>
                 <button type="submit" className="btn-primary">
                   <Save size={16} />
                   <span>Save Job Attributes</span>

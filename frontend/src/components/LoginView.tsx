@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { User, Eye, EyeOff, Lock } from 'lucide-react';
+import { User, Eye, EyeOff, Lock, LayoutDashboard } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface LoginViewProps {
-  onLoginSuccess: (type: 'employee' | 'admin') => void;
+  onLoginSuccess: (type: 'employee' | 'admin', user: any) => void;
   onNavigateToSignUp: () => void;
 }
 
@@ -14,26 +15,42 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTabChange = (type: 'employee' | 'admin') => {
     setLoginType(type);
     setLoginId('');
     setPassword('');
+    setErrorMsg('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginId.trim() || !password.trim()) return;
-    onLoginSuccess(loginType);
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await apiService.login(loginId, password);
+      const role = (res.user?.role || res.user?.userRole || loginType).toLowerCase();
+      onLoginSuccess(role as 'employee' | 'admin', res.user);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const isFormValid = loginId.trim().length > 0 && password.trim().length > 0;
+  const isFormValid = loginId.trim().length > 0 && password.trim().length > 0 && !isLoading;
 
   return (
     <div className="auth-page-wrapper">
       <div className="auth-card">
         {/* Header */}
         <div className="auth-header">
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(124, 58, 237, 0.12)', padding: '12px', borderRadius: '16px', color: '#6d28d9', marginBottom: '14px', border: '1px solid rgba(167, 139, 250, 0.3)', boxShadow: '0 8px 20px rgba(109, 40, 217, 0.12)' }}>
+            <LayoutDashboard size={32} />
+          </div>
           <h1 className="auth-logo font-serif">Dayflow HRMS</h1>
           <p className="auth-subtitle">Welcome back. Please sign in to your account.</p>
         </div>
@@ -57,6 +74,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
               Admin Login
             </button>
           </div>
+
+          {errorMsg && (
+            <div
+              style={{
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '16px',
+                textAlign: 'center',
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -103,7 +137,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               disabled={!isFormValid}
               style={{ opacity: isFormValid ? 1 : 0.6, cursor: isFormValid ? 'pointer' : 'not-allowed' }}
             >
-              Sign In as {loginType === 'admin' ? 'Admin' : 'Employee'}
+              {isLoading ? 'Signing In...' : `Sign In as ${loginType === 'admin' ? 'Admin' : 'Employee'}`}
             </button>
           </form>
 

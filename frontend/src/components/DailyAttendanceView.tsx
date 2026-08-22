@@ -19,10 +19,22 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
 
   const dates = [formatDate(-1), formatDate(0), formatDate(1)];
 
-  const filteredRecords = (records || []).filter(
+  const normalizedRecords = (records || []).map((rec: any) => ({
+    id: rec.id,
+    employeeName: rec.employeeName || rec.name || 'Employee',
+    employeeRole: rec.employeeRole || rec.role || 'Staff Member',
+    checkIn: rec.checkIn || '--:--',
+    checkOut: rec.checkOut || '--:--',
+    workHours: rec.workHours || '0h',
+    extraHours: rec.extraHours || '0h',
+    status: rec.status || 'PRESENT',
+    isLate: rec.isLate || rec.status === 'LATE' || rec.status === 'Late',
+  }));
+
+  const filteredRecords = normalizedRecords.filter(
     (rec) =>
-      (rec.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (rec.employeeRole || '').toLowerCase().includes(searchTerm.toLowerCase())
+      rec.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rec.employeeRole.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handlePrevDate = () => {

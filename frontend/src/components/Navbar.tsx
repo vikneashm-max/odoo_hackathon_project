@@ -125,21 +125,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         <div className="profile-menu-container" ref={profileMenuRef}>
           <button
-            className="user-avatar-btn"
+            className="user-avatar-btn with-text"
             title="User Account"
             onClick={() => setIsProfileMenuOpen((prev) => !prev)}
             aria-haspopup="menu"
             aria-expanded={isProfileMenuOpen}
           >
-            <div className="avatar-circle purple-bg">
-              <span>DF</span>
+            <div className="avatar-wrapper">
+              <div className="avatar-circle purple-bg">
+                <span>DF</span>
+              </div>
+              <span className="avatar-status-dot"></span>
             </div>
             <div className="profile-trigger-details">
               <span className="profile-trigger-name">User Account</span>
               <span className="profile-trigger-role">Portal</span>
             </div>
             <ChevronDown size={14} className={`profile-trigger-chevron ${isProfileMenuOpen ? 'open' : ''}`} />
-            <span className="avatar-status-dot"></span>
           </button>
 
           {isProfileMenuOpen && (

@@ -93,6 +93,16 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     onLogout();
   };
 
+  const getInitials = (emp: Employee) => {
+    if (emp.avatarInitials) return emp.avatarInitials;
+    const nameStr = emp.fullName || emp.name || 'Dayflow Employee';
+    const parts = nameStr.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    return nameStr.slice(0, 2).toUpperCase();
+  };
+
+  const userInitials = getInitials(currentEmployee);
+
   return (
     <div className="app-container">
       {/* Employee Navbar */}
@@ -136,13 +146,19 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
           <div className="profile-menu-wrapper" ref={profileMenuRef} style={{ position: 'relative' }}>
             <div
               className="user-avatar-btn"
-              title={currentEmployee.fullName}
+              title={currentEmployee.fullName || currentEmployee.name || 'User Profile'}
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
             >
-              <div className="avatar-circle">
-                <span>{currentEmployee.avatarInitials || 'JD'}</span>
+              <div className="avatar-wrapper">
+                <div className="avatar-circle purple-bg">
+                  {currentEmployee.avatarUrl ? (
+                    <img src={currentEmployee.avatarUrl} alt={currentEmployee.fullName || currentEmployee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span>{userInitials}</span>
+                  )}
+                </div>
+                <span className="avatar-status-dot"></span>
               </div>
-              <span className="avatar-status-dot"></span>
             </div>
 
             {isProfileMenuOpen && (
@@ -193,7 +209,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                         style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                       />
                     ) : (
-                      <span>{currentEmployee.avatarInitials || 'JD'}</span>
+                      <span>{userInitials}</span>
                     )}
                   </div>
                   <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>
@@ -294,6 +310,69 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
 
       {/* Main Employee Content */}
       <main className="main-content">
+        {/* Top Hero Welcome Banner with Embedded Check-In Box */}
+        <div className="hero-banner-card">
+          <div className="hero-user-info">
+            <div className="avatar-circle purple-bg">
+              {currentEmployee.avatarUrl ? (
+                <img src={currentEmployee.avatarUrl} alt={currentEmployee.fullName || currentEmployee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <span>{userInitials}</span>
+              )}
+            </div>
+            <div>
+              <h1 className="hero-greeting">
+                Welcome back, {currentEmployee.fullName || currentEmployee.name || 'Employee'}! 👋
+              </h1>
+              <div className="hero-meta">
+                <span className="code-pill">{currentEmployee.loginId || 'IN-VK-2026-0001'}</span>
+                <span>{currentEmployee.jobTitle || 'Staff Member'} • {currentEmployee.department || 'Engineering'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Integrated Check-In Status Box */}
+          <div className="embedded-checkin-box">
+            <div className="checkin-info">
+              <div className="checkin-status-badge">
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: isCheckedIn ? '#22c55e' : '#ef4444',
+                    boxShadow: isCheckedIn ? '0 0 8px rgba(34, 197, 94, 0.6)' : '0 0 8px rgba(239, 68, 68, 0.6)',
+                  }}
+                ></span>
+                <span style={{ color: isCheckedIn ? '#15803d' : '#b91c1c' }}>
+                  {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                </span>
+              </div>
+              <div className="checkin-time">{currentTime || '9:57 AM'}</div>
+              <div className="checkin-date">{currentDate}</div>
+            </div>
+
+            <div className="checkin-actions">
+              <button
+                className={`widget-btn ${!isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
+                disabled={isCheckedIn}
+                onClick={() => onToggleCheckIn(true)}
+                style={{ padding: '9px 16px', fontSize: '13px' }}
+              >
+                Check In
+              </button>
+              <button
+                className={`widget-btn ${isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
+                disabled={!isCheckedIn}
+                onClick={() => onToggleCheckIn(false)}
+                style={{ padding: '9px 16px', fontSize: '13px' }}
+              >
+                Check Out
+              </button>
+            </div>
+          </div>
+        </div>
+
         {activeTab === 'my_attendance' && (
           <MyAttendanceView personalRecords={personalRecords} />
         )}
@@ -410,48 +489,9 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
             currentUserRole="employee"
             currentUserId={currentEmployee.id}
             onSaveProfile={onSaveProfile}
-            onLogout={onLogout}
           />
         )}
       </main>
-
-      {/* Floating Check-In / Check-Out Widget */}
-      <div className="check-in-widget">
-        <div className="widget-header">
-          <span className="widget-title">MY CHECK-IN STATUS</span>
-          <div className="widget-status">
-            <span
-              style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor: isCheckedIn ? '#22c55e' : '#ef4444',
-              }}
-            ></span>
-            <span>{isCheckedIn ? 'Checked In' : 'Checked Out'}</span>
-          </div>
-        </div>
-
-        <div className="widget-time">{currentTime || '9:57 AM'}</div>
-        <div className="widget-date">{currentDate || 'Monday, Oct 23'}</div>
-
-        <div className="widget-actions">
-          <button
-            className={`widget-btn ${!isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-            disabled={isCheckedIn}
-            onClick={() => onToggleCheckIn(true)}
-          >
-            Check In
-          </button>
-          <button
-            className={`widget-btn ${isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-            disabled={!isCheckedIn}
-            onClick={() => onToggleCheckIn(false)}
-          >
-            Check Out
-          </button>
-        </div>
-      </div>
 
       {/* Modals */}
       <NewTimeOffModal
