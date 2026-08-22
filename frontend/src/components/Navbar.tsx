@@ -8,6 +8,7 @@ interface NavbarProps {
   attendanceSubView: AttendanceSubView;
   setAttendanceSubView: (subView: AttendanceSubView) => void;
   onLogout: () => void;
+  userRole?: 'admin' | 'employee' | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   attendanceSubView,
   setAttendanceSubView,
   onLogout,
+  userRole,
 }) => {
   return (
     <header className="navbar">
@@ -92,16 +94,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="bell-badge"></span>
         </button>
 
-        <div className="user-avatar-btn" title="John Doe (Click to Sign Out)" onClick={onLogout}>
-          <div className="avatar-circle purple-bg">
-            <span>JD</span>
+        <div className="user-avatar-btn" title={userRole === 'admin' ? 'Admin User' : 'Employee User'} onClick={onLogout}>
+          <div className={`avatar-circle ${userRole === 'admin' ? 'purple-bg' : ''}`}>
+            <span>{userRole === 'admin' ? 'AD' : 'JD'}</span>
           </div>
           <span className="avatar-status-dot"></span>
         </div>
 
         <button
           className="icon-btn"
-          title="Sign Out / Auth Screens"
+          title="Sign Out to Login Page"
           onClick={onLogout}
           style={{ marginLeft: '4px' }}
         >

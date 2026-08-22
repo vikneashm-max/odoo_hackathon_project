@@ -13,10 +13,10 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
 
   const dates = ['22 October 2024', '23 October 2024', '24 October 2024'];
 
-  const filteredRecords = records.filter(
+  const filteredRecords = (records || []).filter(
     (rec) =>
-      rec.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.employeeRole.toLowerCase().includes(searchTerm.toLowerCase())
+      (rec.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.employeeRole || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handlePrevDate = () => {
@@ -100,18 +100,10 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
                   <tr key={record.id}>
                     <td>
                       <div className="employee-cell">
-                        <div
-                          className={`avatar-box ${
-                            record.avatarInitials === 'JD' ? 'purple-bg' : ''
-                          }`}
-                        >
-                          {record.avatarInitials ? (
-                            <span style={{ color: record.avatarInitials === 'JD' ? '#ffffff' : '#4b5563' }}>
-                              {record.avatarInitials}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#6b7280' }}>img</span>
-                          )}
+                        <div className="avatar-box purple-bg">
+                          <span style={{ color: '#ffffff' }}>
+                            {record.employeeName ? record.employeeName.slice(0, 2).toUpperCase() : 'EP'}
+                          </span>
                         </div>
                         <div className="emp-info">
                           <span className="emp-name">{record.employeeName}</span>
@@ -169,7 +161,7 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
 
         {/* Table Footer */}
         <div className="table-footer">
-          <span>Showing {filteredRecords.length} of 124 employees</span>
+          <span>Showing {filteredRecords.length} of {filteredRecords.length} employees</span>
           <div className="pagination">
             <button className="page-btn">Prev</button>
             <button className="page-btn active">Next</button>

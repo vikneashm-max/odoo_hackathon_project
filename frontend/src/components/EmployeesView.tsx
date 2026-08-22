@@ -43,11 +43,11 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const filteredEmployees = employees.filter(
+  const filteredEmployees = (employees || []).filter(
     (emp) =>
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.department.toLowerCase().includes(searchTerm.toLowerCase())
+      (emp.fullName || emp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.jobTitle || emp.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -78,24 +78,26 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
             <div className="employee-card" key={emp.id}>
               <span
                 className={`card-status-dot ${
-                  emp.status === 'active'
+                  emp.status === 'green' || emp.status === 'active'
                     ? 'dot-status-active'
-                    : emp.status === 'break'
-                    ? 'dot-status-break'
-                    : 'dot-status-offline'
+                    : emp.status === 'gray' || emp.status === 'leave'
+                    ? 'dot-status-offline'
+                    : 'dot-status-break'
                 }`}
               ></span>
 
               <div className="card-avatar">
-                {emp.avatarInitials ? (
-                  <span style={{ fontSize: '18px', fontWeight: 600 }}>{emp.avatarInitials}</span>
+                {emp.avatarUrl ? (
+                  <img src={emp.avatarUrl} alt={emp.fullName || emp.name} />
                 ) : (
-                  <span>img</span>
+                  <span style={{ fontSize: '18px', fontWeight: 600 }}>
+                    {emp.avatarInitials || (emp.fullName || emp.name || 'EP').slice(0, 2).toUpperCase()}
+                  </span>
                 )}
               </div>
 
-              <h3 className="card-name">{emp.name}</h3>
-              <p className="card-role">{emp.role}</p>
+              <h3 className="card-name">{emp.fullName || emp.name}</h3>
+              <p className="card-role">{emp.jobTitle || emp.role}</p>
 
               <button
                 className="btn-outline"
