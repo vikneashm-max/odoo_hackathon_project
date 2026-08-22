@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, LayoutDashboard, LogOut, Clock, Calendar, HelpCircle, Plus, User } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, LayoutDashboard, LogOut, Clock, Calendar, HelpCircle, Plus, User, ChevronRight } from 'lucide-react';
 import { MyAttendanceView } from './MyAttendanceView';
 import { TimeOffView } from './TimeOffView';
 import { ProfileView } from './ProfileView';
@@ -45,6 +45,8 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateClock = () => {
@@ -68,8 +70,28 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const safeLeaveRequests = myLeaveRequests || [];
   const safeIssues = myIssues || [];
+
+  const handleGoToProfile = () => {
+    setIsProfileMenuOpen(false);
+    setActiveTab('profile');
+  };
+
+  const handleSignOutClick = () => {
+    setIsProfileMenuOpen(false);
+    onLogout();
+  };
 
   return (
     <div className="app-container">
@@ -111,20 +133,162 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
             <Bell size={18} />
           </button>
 
-          <div
-            className="user-avatar-btn"
-            title={`${currentEmployee.fullName} (Click to View Profile)`}
-            onClick={() => setActiveTab('profile')}
-          >
-            <div className="avatar-circle">
-              <span>{currentEmployee.avatarInitials || 'JD'}</span>
+          <div className="profile-menu-wrapper" ref={profileMenuRef} style={{ position: 'relative' }}>
+            <div
+              className="user-avatar-btn"
+              title={currentEmployee.fullName}
+              onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+            >
+              <div className="avatar-circle">
+                <span>{currentEmployee.avatarInitials || 'JD'}</span>
+              </div>
+              <span className="avatar-status-dot"></span>
             </div>
-            <span className="avatar-status-dot"></span>
-          </div>
 
-          <button className="icon-btn" title="Sign Out" onClick={onLogout} style={{ marginLeft: '4px' }}>
-            <LogOut size={18} />
-          </button>
+            {isProfileMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 12px)',
+                  right: 0,
+                  width: '300px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '16px',
+                  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
+                  overflow: 'hidden',
+                  zIndex: 60,
+                }}
+              >
+                {/* Header block with avatar, name, email */}
+                <div
+                  style={{
+                    padding: '28px 20px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    borderBottom: '1px solid #E5E7EB',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFFFFF',
+                      fontSize: '22px',
+                      fontWeight: 700,
+                      marginBottom: '12px',
+                    }}
+                  >
+                    {currentEmployee.avatarUrl ? (
+                      <img
+                        src={currentEmployee.avatarUrl}
+                        alt={currentEmployee.fullName}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <span>{currentEmployee.avatarInitials || 'JD'}</span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>
+                    {currentEmployee.fullName || currentEmployee.name}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
+                    {currentEmployee.email || 'employee@dayflow.com'}
+                  </span>
+                </div>
+
+                {/* Menu items */}
+                <div style={{ padding: '8px' }}>
+                  <button
+                    onClick={handleGoToProfile}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#111827',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <User size={17} color="#374151" />
+                    <span style={{ flex: 1 }}>My Profile & Salary</span>
+                    <ChevronRight size={15} color="#9CA3AF" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setActiveTab('timeoff_and_issues');
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#111827',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Calendar size={17} color="#374151" />
+                    <span style={{ flex: 1 }}>Time Off & HR Help</span>
+                    <ChevronRight size={15} color="#9CA3AF" />
+                  </button>
+                </div>
+
+                {/* Sign out footer */}
+                <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px' }}>
+                  <button
+                    onClick={handleSignOutClick}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#DC2626',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#FEE2E2')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <LogOut size={17} color="#DC2626" />
+                    <span>Sign out of Dayflow HRMS</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -246,6 +410,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
             currentUserRole="employee"
             currentUserId={currentEmployee.id}
             onSaveProfile={onSaveProfile}
+            onLogout={onLogout}
           />
         )}
       </main>

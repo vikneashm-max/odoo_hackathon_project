@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bell, LayoutDashboard, LogOut, User } from 'lucide-react';
+import React from 'react';
+import { Bell, LayoutDashboard } from 'lucide-react';
 import type { NavTab, AttendanceSubView } from '../types';
 
 interface NavbarProps {
@@ -8,7 +8,6 @@ interface NavbarProps {
   attendanceSubView: AttendanceSubView;
   setAttendanceSubView: (subView: AttendanceSubView) => void;
   onLogout: () => void;
-  userRole?: 'admin' | 'employee' | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,22 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   attendanceSubView,
   setAttendanceSubView,
   onLogout,
-  userRole,
 }) => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-  const isManagerView = userRole === 'admin';
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   return (
     <header className="navbar">
       <div className="nav-left">
@@ -108,21 +92,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="bell-badge"></span>
         </button>
 
-        <div className="user-avatar-btn" title="John Doe (Click to Sign Out)" onClick={onLogout}>
+        <div
+          className="user-avatar-btn"
+          title="John Doe — Go to Profile to Sign Out"
+          onClick={() => setActiveTab('profile' as NavTab)}
+        >
           <div className="avatar-circle purple-bg">
             <span>JD</span>
           </div>
           <span className="avatar-status-dot"></span>
         </div>
-
-        <button
-          className="icon-btn"
-          title="Sign Out / Auth Screens"
-          onClick={onLogout}
-          style={{ marginLeft: '4px' }}
-        >
-          <LogOut size={18} />
-        </button>
       </div>
     </header>
   );

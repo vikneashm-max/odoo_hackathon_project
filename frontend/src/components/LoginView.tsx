@@ -23,8 +23,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loginId.trim() || !password.trim()) return;
     onLoginSuccess(loginType);
   };
+
+  const isFormValid = loginId.trim().length > 0 && password.trim().length > 0;
 
   return (
     <div className="auth-page-wrapper">
@@ -94,7 +97,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             </div>
 
-            <button type="submit" className="btn-primary auth-submit-btn">
+            <button
+              type="submit"
+              className="btn-primary auth-submit-btn"
+              disabled={!isFormValid}
+              style={{ opacity: isFormValid ? 1 : 0.6, cursor: isFormValid ? 'pointer' : 'not-allowed' }}
+            >
               Sign In as {loginType === 'admin' ? 'Admin' : 'Employee'}
             </button>
           </form>
