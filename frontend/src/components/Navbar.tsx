@@ -8,6 +8,7 @@ interface NavbarProps {
   attendanceSubView: AttendanceSubView;
   setAttendanceSubView: (subView: AttendanceSubView) => void;
   onLogout: () => void;
+  userRole?: 'admin' | 'employee' | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,9 +17,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   attendanceSubView,
   setAttendanceSubView,
   onLogout,
+  userRole,
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const isManagerView = userRole === 'admin';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,105 +108,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="bell-badge"></span>
         </button>
 
-        <div className="profile-menu-wrapper" ref={profileRef} style={{ position: 'relative' }}>
-          <div
-            className="user-avatar-btn"
-            title="John Doe"
-            onClick={() => setIsProfileOpen((prev) => !prev)}
-          >
-            <div className="avatar-circle purple-bg">
-              <span>JD</span>
-            </div>
-            <span className="avatar-status-dot"></span>
+        <div className="user-avatar-btn" title="John Doe (Click to Sign Out)" onClick={onLogout}>
+          <div className="avatar-circle purple-bg">
+            <span>JD</span>
           </div>
-
-          {isProfileOpen && (
-            <div
-              className="profile-dropdown"
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 10px)',
-                right: 0,
-                background: '#FFFFFF',
-                border: '1px solid #E5E7EB',
-                borderRadius: '10px',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-                width: '200px',
-                overflow: 'hidden',
-                zIndex: 50,
-              }}
-            >
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderBottom: '1px solid #F1F5F9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
-              >
-                <div className="avatar-circle purple-bg" style={{ width: '32px', height: '32px', fontSize: '13px' }}>
-                  <span>JD</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>John Doe</span>
-                  <span style={{ fontSize: '11px', color: '#94A3B8' }}>Employee</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setIsProfileOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  border: 'none',
-                  background: 'transparent',
-                  padding: '10px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  color: '#334155',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#F8FAFC')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <User size={15} />
-                View Profile
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsProfileOpen(false);
-                  onLogout();
-                }}
-                style={{
-                  width: '100%',
-                  border: 'none',
-                  borderTop: '1px solid #F1F5F9',
-                  background: 'transparent',
-                  padding: '10px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  color: '#DC2626',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontWeight: 500,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#FEF2F2')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <LogOut size={15} />
-                Sign Out
-              </button>
-            </div>
-          )}
+          <span className="avatar-status-dot"></span>
         </div>
+
+        <button
+          className="icon-btn"
+          title="Sign Out / Auth Screens"
+          onClick={onLogout}
+          style={{ marginLeft: '4px' }}
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </header>
   );

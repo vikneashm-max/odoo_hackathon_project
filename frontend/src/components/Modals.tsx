@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Mail, Phone, Calendar, Briefcase } from 'lucide-react';
-import type { Employee, NewTimeOffRequest } from '../types';
+import { X, Mail, Phone, Calendar, Briefcase, AlertCircle, Paperclip } from 'lucide-react';
+import type { Employee, NewTimeOffRequest, EmployeeIssue } from '../types';
 
-/* Add Employee Modal */
+/* Add Employee Modal (Admin Only) */
 interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,29 +14,45 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   onClose,
   onAddEmployee,
 }) => {
-  const [name, setName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('');
   const [department, setDepartment] = useState('Engineering');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('IN');
+  const [grossWage, setGrossWage] = useState<number>(60000);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !role) return;
+    if (!fullName || !role) return;
 
     onAddEmployee({
-      name,
+      fullName,
+      name: fullName,
+      jobTitle: role,
       role,
       department,
-      email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
+      email: email || `${fullName.toLowerCase().replace(/\s+/g, '.')}@company.com`,
       phone: phone || '+1 (555) 019-2834',
+      countryCode,
       joinDate: new Date().toISOString().split('T')[0],
-      status: 'active',
-    });
+      status: 'yellow', // yellow: absent/checked out
+      salary: {
+        grossMonthly: grossWage,
+        basic: grossWage * 0.5,
+        hra: grossWage * 0.2,
+        standardAllowance: 5000,
+        performanceBonus: grossWage * 0.1,
+        lta: 3000,
+        fixedAllowance: Math.max(0, grossWage * 0.2 - 8000),
+        pfRate: 12,
+        professionalTax: 200,
+      },
+    } as any);
 
-    setName('');
+    setFullName('');
     setRole('');
     onClose();
   };
@@ -45,7 +61,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Add New Employee</h3>
+          <h3>Add New Employee (Admin)</h3>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -53,27 +69,48 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full Name</label>
+            <label>Full Name *</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Alex Stanton"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Vikneash K"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label>Job Title / Role</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Senior Developer"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              required
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="form-group">
+              <label>Country Code</label>
+              <select
+                className="form-select"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+              >
+                <option value="IN">IN (India)</option>
+                <option value="US">US (United States)</option>
+                <option value="UK">UK (United Kingdom)</option>
+                <option value="CA">CA (Canada)</option>
+                <option value="SG">SG (Singapore)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Job Title / Role *</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Senior Developer"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ backgroundColor: '#f3e8ff', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', color: '#6b21a8' }}>
+            <strong>Auto-Generated Login ID Format:</strong> <code>{countryCode}-XX-{new Date().getFullYear()}-####</code>
           </div>
 
           <div className="form-group">
@@ -96,7 +133,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             <input
               type="email"
               className="form-input"
-              placeholder="alex.stanton@company.com"
+              placeholder="vikneash@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -110,6 +147,16 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               placeholder="+1 (555) 000-0000"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Initial Gross Monthly Salary (₹)</label>
+            <input
+              type="number"
+              className="form-input"
+              value={grossWage}
+              onChange={(e) => setGrossWage(Number(e.target.value))}
             />
           </div>
 
@@ -162,20 +209,24 @@ export const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ employee, on
               <span>img</span>
             )}
           </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{employee.name}</h3>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>{employee.role}</p>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{employee.fullName || employee.name}</h3>
+          <p style={{ fontSize: '14px', color: '#6b7280' }}>{employee.jobTitle || employee.role}</p>
 
           <span
             className={`badge ${
-              employee.status === 'active'
+              employee.status === 'green' || employee.status === 'active'
                 ? 'badge-ontime'
-                : employee.status === 'break'
-                ? 'badge-late'
-                : 'badge-leave'
+                : employee.status === 'gray' || employee.status === 'leave'
+                ? 'badge-leave'
+                : 'badge-late'
             }`}
             style={{ marginTop: '10px' }}
           >
-            {employee.status === 'active' ? 'Active / On duty' : employee.status === 'break' ? 'On Break' : 'Offline / Leave'}
+            {employee.status === 'green' || employee.status === 'active'
+              ? '• Present'
+              : employee.status === 'gray' || employee.status === 'leave'
+              ? '• On Leave'
+              : '• Absent'}
           </span>
         </div>
 
@@ -224,6 +275,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [attachmentFileName, setAttachmentFileName] = useState('');
 
   if (!isOpen) return null;
 
@@ -234,6 +286,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
       startDate,
       endDate,
       reason,
+      attachmentFileName: attachmentFileName || (leaveType === 'sick' ? 'medical_note.pdf' : undefined),
     });
     onClose();
   };
@@ -242,7 +295,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Submit Time Off Request</h3>
+          <h3>Apply for Time Off</h3>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -263,7 +316,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label>Start Date</label>
+              <label>Start Date *</label>
               <input
                 type="date"
                 className="form-input"
@@ -273,7 +326,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
               />
             </div>
             <div className="form-group">
-              <label>End Date</label>
+              <label>End Date *</label>
               <input
                 type="date"
                 className="form-input"
@@ -285,13 +338,144 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
           </div>
 
           <div className="form-group">
-            <label>Reason for Leave</label>
+            <label>Remarks / Reason</label>
             <textarea
               className="form-textarea"
               rows={3}
               placeholder="Briefly describe your request..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+            ></textarea>
+          </div>
+
+          {leaveType === 'sick' && (
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Paperclip size={14} color="#6d28d9" />
+                <span>Medical Attachment (Required for Sick Leave)</span>
+              </label>
+              <input
+                type="file"
+                className="form-input"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={(e) => setAttachmentFileName(e.target.files?.[0]?.name || '')}
+              />
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={onClose}
+              style={{ width: 'auto' }}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Submit Leave Application
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* New Employee Issue / Help Desk Ticket Modal */
+interface NewIssueModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmitIssue: (issue: Omit<EmployeeIssue, 'id' | 'submittedAt'>) => void;
+}
+
+export const NewIssueModal: React.FC<NewIssueModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmitIssue,
+}) => {
+  const [category, setCategory] = useState<
+    'Attendance Correction' | 'Payroll Query' | 'HR Support' | 'Other'
+  >('Attendance Correction');
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject || !description) return;
+
+    onSubmitIssue({
+      employeeName: 'Employee',
+      category,
+      subject,
+      description,
+      status: 'Pending',
+    });
+
+    setSubject('');
+    setDescription('');
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle size={20} color="#6d28d9" />
+            Report Issue / HR Help Desk
+          </h3>
+          <button className="modal-close-btn" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Issue Category</label>
+            <select
+              className="form-select"
+              value={category}
+              onChange={(e) =>
+                setCategory(
+                  e.target.value as
+                    | 'Attendance Correction'
+                    | 'Payroll Query'
+                    | 'HR Support'
+                    | 'Other'
+                )
+              }
+            >
+              <option value="Attendance Correction">Attendance Correction</option>
+              <option value="Payroll Query">Payroll Query</option>
+              <option value="HR Support">HR Support</option>
+              <option value="Other">Other Query</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Subject / Summary</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Forgot to clock out on 22 Oct"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Detailed Description</label>
+            <textarea
+              className="form-textarea"
+              rows={4}
+              placeholder="Explain the issue or assistance needed..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
             ></textarea>
           </div>
 
@@ -305,7 +489,7 @@ export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
               Cancel
             </button>
             <button type="submit" className="btn-primary">
-              Submit Request
+              Submit Ticket
             </button>
           </div>
         </form>

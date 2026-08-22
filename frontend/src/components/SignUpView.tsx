@@ -52,7 +52,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. John Doe"
+                placeholder="Enter your full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -64,7 +64,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               <input
                 type="email"
                 className="form-input"
-                placeholder="john.doe@company.com"
+                placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

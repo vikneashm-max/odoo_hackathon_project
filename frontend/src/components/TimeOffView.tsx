@@ -12,7 +12,12 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
   onNewRequestClick,
 }) => {
   const [monthIndex, setMonthIndex] = useState<number>(0);
-  const months = ['October 2024', 'November 2024', 'December 2024'];
+  const now = new Date();
+  const formatMonth = (offset: number) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+  const months = [formatMonth(-1), formatMonth(0), formatMonth(1)];
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -29,12 +34,12 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
     { date: 7, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 8, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 9, isOtherMonth: false, isWeekend: false, status: 'normal' },
-    { date: 10, isOtherMonth: false, isWeekend: false, status: 'approved' },
-    { date: 11, isOtherMonth: false, isWeekend: false, status: 'approved' },
+    { date: 10, isOtherMonth: false, isWeekend: false, status: 'normal' },
+    { date: 11, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 12, isOtherMonth: false, isWeekend: true, status: 'weekend' },
 
     { date: 13, isOtherMonth: false, isWeekend: true, status: 'weekend' },
-    { date: 14, isOtherMonth: false, isWeekend: false, status: 'pending' },
+    { date: 14, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 15, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 16, isOtherMonth: false, isWeekend: false, status: 'normal' },
     { date: 17, isOtherMonth: false, isWeekend: false, status: 'normal' },
