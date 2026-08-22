@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bell, LayoutDashboard } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Bell, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react';
 import type { NavTab, AttendanceSubView } from '../types';
 
 interface NavbarProps {
@@ -8,6 +8,7 @@ interface NavbarProps {
   attendanceSubView: AttendanceSubView;
   setAttendanceSubView: (subView: AttendanceSubView) => void;
   onLogout: () => void;
+  userRole?: 'admin' | 'employee' | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +18,36 @@ export const Navbar: React.FC<NavbarProps> = ({
   setAttendanceSubView,
   onLogout,
 }) => {
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  const handleSignOut = () => {
+    setIsProfileMenuOpen(false);
+    onLogout();
+  };
+
   return (
     <header className="navbar">
       <div className="nav-left">
@@ -92,15 +123,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="bell-badge"></span>
         </button>
 
-        <div
-          className="user-avatar-btn"
-          title="John Doe — Go to Profile to Sign Out"
-          onClick={() => setActiveTab('profile' as NavTab)}
-        >
-          <div className="avatar-circle purple-bg">
-            <span>JD</span>
-          </div>
-          <span className="avatar-status-dot"></span>
+        <div className="profile-menu-container" ref={profileMenuRef}>
+          <button
+            className="user-avatar-btn"
+            title="User Account"
+            onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={isProfileMenuOpen}
+          >
+            <div className="avatar-circle purple-bg">
+              <span>DF</span>
+            </div>
+            <div className="profile-trigger-details">
+              <span className="profile-trigger-name">User Account</span>
+              <span className="profile-trigger-role">Portal</span>
+            </div>
+            <ChevronDown size={14} className={`profile-trigger-chevron ${isProfileMenuOpen ? 'open' : ''}`} />
+            <span className="avatar-status-dot"></span>
+          </button>
+
+          {isProfileMenuOpen && (
+            <div className="profile-dropdown-menu" role="menu" aria-label="Profile menu">
+              <div className="profile-menu-user">
+                <p className="profile-menu-name">User Account</p>
+                <p className="profile-menu-email">user@dayflow.local</p>
+              </div>
+              <button className="profile-menu-item sign-out" role="menuitem" onClick={handleSignOut}>
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
