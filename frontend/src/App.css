@@ -1,3 +1,15 @@
+:root {
+  --accent: #0d9488;          /* teal */
+  --accent-bg: #e6fffa;       /* pale teal */
+  --accent-border: #14b8a6;   /* brighter teal */
+  --border: #cbd5e1;          /* slate-300 */
+  --text-h: #1e293b;          /* slate-800 */
+  --social-bg: #f1f5f9;       /* slate-100 */
+  --shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  --navy: #0f172a;            /* slate-900, deep navy */
+  --navy-mid: #1e3a5f;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
@@ -5,11 +17,16 @@
   color: var(--accent);
   background: var(--accent-bg);
   border: 2px solid transparent;
-  transition: border-color 0.3s;
+  transition: border-color 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
   margin-bottom: 24px;
+  cursor: pointer;
 
   &:hover {
     border-color: var(--accent-border);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  }
+  &:active {
+    transform: scale(0.97);
   }
   &:focus-visible {
     outline: 2px solid var(--accent);
@@ -31,11 +48,13 @@
     width: 170px;
     position: relative;
     z-index: 0;
+    filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.18));
   }
 
   .framework,
   .vite {
     position: absolute;
+    transition: transform 0.4s ease;
   }
 
   .framework {
@@ -54,6 +73,15 @@
     transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
       scale(0.8);
   }
+
+  &:hover .framework {
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.48);
+  }
+  &:hover .vite {
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.85);
+  }
 }
 
 #center {
@@ -63,6 +91,7 @@
   place-content: center;
   place-items: center;
   flex-grow: 1;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
 
   @media (max-width: 1024px) {
     padding: 32px 20px 24px;
@@ -74,10 +103,17 @@
   display: flex;
   border-top: 1px solid var(--border);
   text-align: left;
+  background: #ffffff;
 
   & > div {
     flex: 1 1 0;
     padding: 32px;
+    transition: background-color 0.25s ease;
+
+    &:hover {
+      background-color: var(--social-bg);
+    }
+
     @media (max-width: 1024px) {
       padding: 24px 20px;
     }
@@ -87,6 +123,7 @@
     margin-bottom: 16px;
     width: 22px;
     height: 22px;
+    color: var(--accent);
   }
 
   @media (max-width: 1024px) {
@@ -125,10 +162,20 @@
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    transition: box-shadow 0.3s ease, transform 0.15s ease, background-color 0.25s ease;
 
     &:hover {
       box-shadow: var(--shadow);
+      transform: translateY(-1px);
+      background-color: var(--accent-bg);
+      color: var(--accent);
+    }
+    &:active {
+      transform: translateY(0);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
     .button-icon {
       height: 18px;
@@ -156,6 +203,7 @@
 #spacer {
   height: 88px;
   border-top: 1px solid var(--border);
+  background: #ffffff;
   @media (max-width: 1024px) {
     height: 48px;
   }
