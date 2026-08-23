@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Briefcase, DollarSign, Lock, Save, ShieldAlert } from 'lucide-react';
+import { Avatar } from './Avatar';
 import type { Employee, SalaryStructure, UserRole } from '../types';
 
 interface ProfileViewProps {
@@ -124,13 +125,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Header Profile Badge Card */}
       <div className="card-container" style={{ padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div className="avatar-box" style={{ width: '72px', height: '72px', fontSize: '20px', fontWeight: 700 }}>
-          {employee.avatarUrl ? (
-            <img src={employee.avatarUrl} alt={employee.fullName || employee.name} />
-          ) : (
-            <span>{employee.avatarInitials || 'EP'}</span>
-          )}
-        </div>
+        <Avatar employee={employee} avatarUrl={avatarUrl} size={72} />
 
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>

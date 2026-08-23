@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Avatar } from './Avatar';
 import type { DailyAttendanceRecord } from '../types';
 
 interface DailyAttendanceViewProps {
@@ -118,11 +119,7 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
                   <tr key={record.id}>
                     <td>
                       <div className="employee-cell">
-                        <div className="avatar-box purple-bg">
-                          <span style={{ color: '#ffffff' }}>
-                            {record.employeeName ? record.employeeName.slice(0, 2).toUpperCase() : 'EP'}
-                          </span>
-                        </div>
+                        <Avatar name={record.employeeName} size={36} />
                         <div className="emp-info">
                           <span className="emp-name">{record.employeeName}</span>
                           <span className="emp-role">{record.employeeRole}</span>
@@ -181,8 +178,9 @@ export const DailyAttendanceView: React.FC<DailyAttendanceViewProps> = ({ record
         <div className="table-footer">
           <span>Showing {filteredRecords.length} of {filteredRecords.length} employees</span>
           <div className="pagination">
-            <button className="page-btn">Prev</button>
-            <button className="page-btn active">Next</button>
+            <button className="page-btn" disabled>Prev</button>
+            <button className="page-btn active">1</button>
+            <button className="page-btn" disabled>Next</button>
           </div>
         </div>
       </div>

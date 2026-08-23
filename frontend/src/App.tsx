@@ -38,7 +38,7 @@ function App() {
     status: 'green',
   });
 
-  const [isCheckedIn, setIsCheckedIn] = useState<boolean>(false);
+  const [isCheckedIn, setIsCheckedIn] = useState<boolean>(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   // Application Data State
@@ -73,7 +73,13 @@ function App() {
           setUserRole(user.role);
           setCurrentEmployee(user);
           setAuthMode('authenticated');
-          fetchInitialData();
+          await fetchInitialData(user.id);
+          if (user.role === 'employee') {
+            const statusRes = await apiService.getAttendanceStatus(user.id);
+            if (!statusRes || !statusRes.isCheckedIn) {
+              await handleToggleCheckIn(true, true);
+            }
+          }
         }
       } catch (err) {
         console.log('Session check complete.');
@@ -104,6 +110,8 @@ function App() {
       const statusRes = await apiService.getAttendanceStatus(activeId);
       if (statusRes && typeof statusRes.isCheckedIn === 'boolean') {
         setIsCheckedIn(statusRes.isCheckedIn);
+      } else {
+        setIsCheckedIn(true);
       }
 
       const payroll = await apiService.getPayrollComponents();
@@ -125,8 +133,14 @@ function App() {
     setCurrentUserId(userId);
     setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
-    showToast(`Signed in successfully as ${activeUser.fullName || activeUser.name || 'User'}.`);
     await fetchInitialData(userId);
+
+    if (role === 'employee') {
+      await handleToggleCheckIn(true, true);
+      showToast(`Welcome back, ${activeUser.fullName || activeUser.name || 'Employee'}! Automatically checked in for work.`);
+    } else {
+      showToast(`Signed in successfully as ${activeUser.fullName || activeUser.name || 'Admin'}.`);
+    }
   };
 
   const handleSignUpSuccess = async (user: any) => {
@@ -136,14 +150,23 @@ function App() {
     setCurrentUserId(userId);
     setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
-    showToast('Employee account created successfully! Welcome to Dayflow HRMS.');
     await fetchInitialData(userId);
+    await handleToggleCheckIn(true, true);
+    showToast('Employee account created! Automatically checked in for work.');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (userRole === 'employee') {
+      try {
+        await apiService.checkOut();
+      } catch (err) {
+        console.log('Auto check-out on logout complete.');
+      }
+    }
+    setIsCheckedIn(false);
     localStorage.removeItem('dayflow_jwt_token');
     setAuthMode('login');
-    showToast('Signed out successfully.', 'info');
+    showToast('Signed out and automatically checked out.', 'info');
   };
 
   // Admin Data Handlers
@@ -206,15 +229,15 @@ function App() {
     }
   };
 
-  const handleToggleCheckIn = async (status: boolean) => {
+  const handleToggleCheckIn = async (status: boolean, isSilent = false) => {
     setIsCheckedIn(status);
     try {
       if (status) {
         const res = await apiService.checkIn();
-        showToast(res.message);
+        if (!isSilent) showToast(res.message);
       } else {
         const res = await apiService.checkOut();
-        showToast(res.message);
+        if (!isSilent) showToast(res.message);
       }
     } catch (err) {
       const now = new Date();
@@ -232,14 +255,14 @@ function App() {
           extraHours: '00:00',
         };
         setPersonalAttendance((prev) => [newRecord, ...prev]);
-        showToast(`Check-in recorded at ${timeStr}`);
+        if (!isSilent) showToast(`Check-in recorded at ${timeStr}`);
       } else {
         setPersonalAttendance((prev) =>
           prev.map((rec, index) =>
             index === 0 ? { ...rec, checkOut: timeStr, workHours: '08:00' } : rec
           )
         );
-        showToast(`Check-out recorded at ${timeStr}`);
+        if (!isSilent) showToast(`Check-out recorded at ${timeStr}`);
       }
     }
   };

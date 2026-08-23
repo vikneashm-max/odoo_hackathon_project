@@ -84,18 +84,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       <div className="nav-right">
         {activeTab === 'attendance' && (
-          <div style={{ display: 'flex', gap: '4px', background: '#F3E8FF', padding: '3px', borderRadius: '8px', marginRight: '12px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-subtle)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', marginRight: '12px' }}>
             <button
               onClick={() => setAttendanceSubView('daily')}
               style={{
                 border: 'none',
-                background: attendanceSubView === 'daily' ? '#6D28D9' : 'transparent',
-                color: attendanceSubView === 'daily' ? '#FFFFFF' : '#6B21A8',
-                padding: '4px 10px',
+                background: attendanceSubView === 'daily' ? 'var(--primary)' : 'transparent',
+                color: attendanceSubView === 'daily' ? '#FFFFFF' : 'var(--text-secondary)',
+                padding: '5px 12px',
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
               Daily (Manager)
@@ -104,13 +105,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setAttendanceSubView('my')}
               style={{
                 border: 'none',
-                background: attendanceSubView === 'my' ? '#6D28D9' : 'transparent',
-                color: attendanceSubView === 'my' ? '#FFFFFF' : '#6B21A8',
-                padding: '4px 10px',
+                background: attendanceSubView === 'my' ? 'var(--primary)' : 'transparent',
+                color: attendanceSubView === 'my' ? '#FFFFFF' : 'var(--text-secondary)',
+                padding: '5px 12px',
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
               My Attendance

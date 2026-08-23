@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Phone, Calendar, Briefcase, AlertCircle, Paperclip } from 'lucide-react';
+import { Avatar } from './Avatar';
 import type { Employee, NewTimeOffRequest, EmployeeIssue } from '../types';
 
 /* Add Employee Modal (Admin Only) */
@@ -199,15 +200,8 @@ export const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ employee, on
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
-          <div
-            className="card-avatar"
-            style={{ width: '80px', height: '80px', fontSize: '20px', marginBottom: '12px' }}
-          >
-            {employee.avatarInitials ? (
-              <span style={{ fontWeight: 700 }}>{employee.avatarInitials}</span>
-            ) : (
-              <span>img</span>
-            )}
+          <div style={{ marginBottom: '12px' }}>
+            <Avatar employee={employee} size={80} />
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{employee.fullName || employee.name}</h3>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>{employee.jobTitle || employee.role}</p>

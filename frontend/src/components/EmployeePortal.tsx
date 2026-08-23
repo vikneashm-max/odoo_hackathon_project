@@ -4,6 +4,7 @@ import { MyAttendanceView } from './MyAttendanceView';
 import { TimeOffView } from './TimeOffView';
 import { ProfileView } from './ProfileView';
 import { NewTimeOffModal, NewIssueModal } from './Modals';
+import { Avatar } from './Avatar';
 import type {
   Employee,
   PersonalAttendanceRecord,
@@ -34,7 +35,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   myLeaveRequests = [],
   myIssues = [],
   isCheckedIn,
-  onToggleCheckIn,
+  onToggleCheckIn: _onToggleCheckIn,
   onNewTimeOffRequest,
   onNewIssue,
   onSaveProfile,
@@ -93,16 +94,6 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
     onLogout();
   };
 
-  const getInitials = (emp: Employee) => {
-    if (emp.avatarInitials) return emp.avatarInitials;
-    const nameStr = emp.fullName || emp.name || 'Dayflow Employee';
-    const parts = nameStr.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    return nameStr.slice(0, 2).toUpperCase();
-  };
-
-  const userInitials = getInitials(currentEmployee);
-
   return (
     <div className="app-container">
       {/* Employee Navbar */}
@@ -150,14 +141,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
             >
               <div className="avatar-wrapper">
-                <div className="avatar-circle purple-bg">
-                  {currentEmployee.avatarUrl ? (
-                    <img src={currentEmployee.avatarUrl} alt={currentEmployee.fullName || currentEmployee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <span>{userInitials}</span>
-                  )}
-                </div>
-                <span className="avatar-status-dot"></span>
+                <Avatar employee={currentEmployee} size={38} showStatusDot />
               </div>
             </div>
 
@@ -187,30 +171,8 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                     borderBottom: '1px solid #E5E7EB',
                   }}
                 >
-                  <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#FFFFFF',
-                      fontSize: '22px',
-                      fontWeight: 700,
-                      marginBottom: '12px',
-                    }}
-                  >
-                    {currentEmployee.avatarUrl ? (
-                      <img
-                        src={currentEmployee.avatarUrl}
-                        alt={currentEmployee.fullName}
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <span>{userInitials}</span>
-                    )}
+                  <div style={{ marginBottom: '12px' }}>
+                    <Avatar employee={currentEmployee} size={64} />
                   </div>
                   <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>
                     {currentEmployee.fullName || currentEmployee.name}
@@ -313,13 +275,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
         {/* Top Hero Welcome Banner with Embedded Check-In Box */}
         <div className="hero-banner-card">
           <div className="hero-user-info">
-            <div className="avatar-circle purple-bg">
-              {currentEmployee.avatarUrl ? (
-                <img src={currentEmployee.avatarUrl} alt={currentEmployee.fullName || currentEmployee.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <span>{userInitials}</span>
-              )}
-            </div>
+            <Avatar employee={currentEmployee} size={58} />
             <div>
               <h1 className="hero-greeting">
                 Welcome back, {currentEmployee.fullName || currentEmployee.name || 'Employee'}! 👋
@@ -350,147 +306,125 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
               </div>
               <div className="checkin-time">{currentTime || '9:57 AM'}</div>
               <div className="checkin-date">{currentDate}</div>
-            </div>
-
-            <div className="checkin-actions">
-              <button
-                className={`widget-btn ${!isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-                disabled={isCheckedIn}
-                onClick={() => onToggleCheckIn(true)}
-                style={{ padding: '9px 16px', fontSize: '13px' }}
-              >
-                Check In
-              </button>
-              <button
-                className={`widget-btn ${isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-                disabled={!isCheckedIn}
-                onClick={() => onToggleCheckIn(false)}
-                style={{ padding: '9px 16px', fontSize: '13px' }}
-              >
-                Check Out
-              </button>
+              <div style={{ fontSize: '11.5px', color: '#15803d', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                ⚡ Auto check-in on login & auto check-out on sign out
+              </div>
             </div>
           </div>
         </div>
 
-        {activeTab === 'my_attendance' && (
-          <MyAttendanceView personalRecords={personalRecords} />
-        )}
+        <div className="tab-content-enter" key={activeTab}>
+          {activeTab === 'my_attendance' && (
+            <MyAttendanceView personalRecords={personalRecords} />
+          )}
 
-        {activeTab === 'timeoff_and_issues' && (
-          <div>
-            <div className="controls-toolbar" style={{ justifyContent: 'flex-end', gap: '12px', marginBottom: '20px' }}>
-              <button
-                className="btn-outline"
-                style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => setIsIssueModalOpen(true)}
-              >
-                <HelpCircle size={16} color="#6d28d9" />
-                <span>Report Issue / Help</span>
-              </button>
+          {activeTab === 'timeoff_and_issues' && (
+            <div>
+              <div className="controls-toolbar" style={{ justifyContent: 'flex-end', gap: '12px', marginBottom: '20px' }}>
+                <button
+                  className="btn-outline"
+                  style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => setIsIssueModalOpen(true)}
+                >
+                  <HelpCircle size={16} color="var(--primary)" />
+                  <span>Report Issue / Help</span>
+                </button>
 
-              <button className="btn-primary" onClick={() => setIsTimeOffModalOpen(true)}>
-                <Plus size={18} />
-                <span>Request Time Off</span>
-              </button>
-            </div>
+                <button className="btn-primary" onClick={() => setIsTimeOffModalOpen(true)}>
+                  <Plus size={18} />
+                  <span>Request Time Off</span>
+                </button>
+              </div>
 
-            <TimeOffView
-              balance={timeOffBalance}
-              onNewRequestClick={() => setIsTimeOffModalOpen(true)}
-            />
+              <TimeOffView
+                balance={timeOffBalance}
+                leaveRequests={safeLeaveRequests}
+                issues={safeIssues}
+                onNewRequestClick={() => setIsTimeOffModalOpen(true)}
+              />
 
-            {/* Activity Table */}
-            <div style={{ marginTop: '32px' }}>
-              <h2 className="font-serif" style={{ fontSize: '20px', color: '#111827', marginBottom: '16px' }}>
-                My Activity & Help Tickets
-              </h2>
+              {/* Activity Table */}
+              <div style={{ marginTop: '32px' }}>
+                <h2 className="section-title" style={{ marginBottom: '16px' }}>
+                  My Activity & Help Tickets
+                </h2>
 
-              <div className="card-container">
-                <div className="table-wrapper">
-                  <table className="custom-table">
-                    <thead>
-                      <tr>
-                        <th>Type</th>
-                        <th>Subject / Details</th>
-                        <th>Submitted At</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {safeLeaveRequests.map((l) => (
-                        <tr key={l.id}>
-                          <td>
-                            <span className="badge badge-ontime">
-                              {l.leaveType === 'paid' ? 'Paid Leave' : 'Sick Leave'}
-                            </span>
-                          </td>
-                          <td>{l.startDate} to {l.endDate} ({l.reason || 'No reason provided'})</td>
-                          <td>{l.submittedAt}</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                l.status === 'Approved'
-                                  ? 'badge-ontime'
-                                  : l.status === 'Rejected'
-                                  ? 'badge-late'
-                                  : 'badge-leave'
-                              }`}
-                            >
-                              {l.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {safeIssues.map((issue) => (
-                        <tr key={issue.id}>
-                          <td>
-                            <span className="badge badge-late">{issue.category}</span>
-                          </td>
-                          <td>
-                            <strong>{issue.subject}</strong> - {issue.description}
-                          </td>
-                          <td>{issue.submittedAt}</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                issue.status === 'Resolved'
-                                  ? 'badge-ontime'
-                                  : issue.status === 'Rejected'
-                                  ? 'badge-late'
-                                  : 'badge-leave'
-                              }`}
-                            >
-                              {issue.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {safeLeaveRequests.length === 0 && safeIssues.length === 0 && (
+                <div className="card-container">
+                  <div className="table-wrapper">
+                    <table className="custom-table">
+                      <thead>
                         <tr>
-                          <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af' }}>
-                            No requests or help tickets submitted yet. Click "Request Time Off" or "Report Issue / Help" above.
-                          </td>
+                          <th>Type</th>
+                          <th>Subject / Details</th>
+                          <th>Submitted At</th>
+                          <th>Request Process Status</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {safeLeaveRequests.map((l) => {
+                          const stage = l.status === 'Approved' ? 'accepted' : l.status === 'Rejected' ? 'rejected' : 'sent';
+                          return (
+                            <tr key={l.id}>
+                              <td>
+                                <span className="badge badge-ontime">
+                                  {l.leaveType === 'paid' ? 'Paid Leave' : 'Sick Leave'}
+                                </span>
+                              </td>
+                              <td>{l.startDate} to {l.endDate} ({l.reason || 'No reason provided'})</td>
+                              <td>{l.submittedAt}</td>
+                              <td>
+                                <span className={`process-badge badge-stage-${stage}`}>
+                                  {stage === 'accepted' ? 'Accepted ✓' : stage === 'rejected' ? 'Rejected ✕' : 'Sent ↗'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {safeIssues.map((issue) => {
+                          const stage = issue.status === 'Resolved' ? 'accepted' : issue.status === 'Rejected' ? 'rejected' : issue.status === 'In Progress' ? 'seen' : 'sent';
+                          return (
+                            <tr key={issue.id}>
+                              <td>
+                                <span className="badge badge-late">{issue.category}</span>
+                              </td>
+                              <td>
+                                <strong>{issue.subject}</strong> - {issue.description}
+                              </td>
+                              <td>{issue.submittedAt}</td>
+                              <td>
+                                <span className={`process-badge badge-stage-${stage}`}>
+                                  {stage === 'accepted' ? 'Accepted ✓' : stage === 'rejected' ? 'Rejected ✕' : stage === 'seen' ? 'Seen 👁' : 'Sent ↗'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {safeLeaveRequests.length === 0 && safeIssues.length === 0 && (
+                          <tr>
+                            <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af' }}>
+                              No requests or help tickets submitted yet. Click "Request Time Off" or "Report Issue / Help" above.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'profile' && (
-          <ProfileView
-            employee={currentEmployee}
-            currentUserRole="employee"
-            currentUserId={currentEmployee.id}
-            onSaveProfile={onSaveProfile}
-          />
-        )}
+          {activeTab === 'profile' && (
+            <ProfileView
+              employee={currentEmployee}
+              currentUserRole="employee"
+              currentUserId={currentEmployee.id}
+              onSaveProfile={onSaveProfile}
+            />
+          )}
+        </div>
       </main>
 
       {/* Modals */}

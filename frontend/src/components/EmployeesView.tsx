@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Users } from 'lucide-react';
+import { Avatar } from './Avatar';
 import type { Employee } from '../types';
 
 interface EmployeesViewProps {
@@ -7,7 +8,7 @@ interface EmployeesViewProps {
   onAddEmployeeClick: () => void;
   onViewProfileClick: (emp: Employee) => void;
   isCheckedIn: boolean;
-  onToggleCheckIn: (status: boolean) => void;
+  onToggleCheckIn?: (status: boolean) => void;
 }
 
 export const EmployeesView: React.FC<EmployeesViewProps> = ({
@@ -15,7 +16,6 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
   onAddEmployeeClick,
   onViewProfileClick,
   isCheckedIn,
-  onToggleCheckIn,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -86,14 +86,8 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                 }`}
               ></span>
 
-              <div className="card-avatar">
-                {emp.avatarUrl ? (
-                  <img src={emp.avatarUrl} alt={emp.fullName || emp.name} />
-                ) : (
-                  <span style={{ fontSize: '18px', fontWeight: 600 }}>
-                    {emp.avatarInitials || (emp.fullName || emp.name || 'EP').slice(0, 2).toUpperCase()}
-                  </span>
-                )}
+              <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                <Avatar employee={emp} size={48} />
               </div>
 
               <h3 className="card-name">{emp.fullName || emp.name}</h3>
@@ -110,11 +104,11 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
         </div>
       ) : (
         <div className="card-container" style={{ padding: '60px 24px', textAlign: 'center' }}>
-          <Users size={48} color="#c084fc" style={{ marginBottom: '16px' }} />
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '6px' }}>
+          <Users size={48} color="var(--primary)" style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
             No Employees Found
           </h3>
-          <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
             {searchTerm
               ? `No employee records match "${searchTerm}"`
               : 'There are no employees added to the system yet.'}
@@ -126,7 +120,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
         </div>
       )}
 
-      {/* Floating Check-In / Check-Out Status Widget */}
+      {/* Floating Check-In Status Widget */}
       <div className="check-in-widget">
         <div className="widget-header">
           <span className="widget-title">CURRENT STATUS</span>
@@ -145,23 +139,6 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
 
         <div className="widget-time">{currentTime || '9:57 AM'}</div>
         <div className="widget-date">{currentDate || 'Monday, Oct 23'}</div>
-
-        <div className="widget-actions">
-          <button
-            className={`widget-btn ${!isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-            disabled={isCheckedIn}
-            onClick={() => onToggleCheckIn(true)}
-          >
-            Check In
-          </button>
-          <button
-            className={`widget-btn ${isCheckedIn ? 'btn-checkout-active' : 'btn-checkin-disabled'}`}
-            disabled={!isCheckedIn}
-            onClick={() => onToggleCheckIn(false)}
-          >
-            Check Out
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -177,9 +177,9 @@ export const MyAttendanceView: React.FC<MyAttendanceViewProps> = ({ personalReco
         <div className="table-footer">
           <span>Showing {personalRecords.length} of {personalRecords.length} entries</span>
           <div className="pagination">
-            <button className="page-btn">Prev</button>
+            <button className="page-btn" disabled>Prev</button>
             <button className="page-btn active">1</button>
-            <button className="page-btn">Next</button>
+            <button className="page-btn" disabled>Next</button>
           </div>
         </div>
       </div>

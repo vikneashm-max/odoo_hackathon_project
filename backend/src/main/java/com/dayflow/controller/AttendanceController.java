@@ -37,10 +37,32 @@ public class AttendanceController {
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
 
+    private Optional<Employee> findEmployee(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        String cleanId = identifier.trim();
+        try {
+            Long id = Long.valueOf(cleanId);
+            Optional<Employee> emp = employeeRepository.findById(id);
+            if (emp.isPresent()) return emp;
+        } catch (NumberFormatException ignored) {}
+
+        Optional<Employee> emp = employeeRepository.findByLoginId(cleanId);
+        if (emp.isPresent()) return emp;
+
+        return employeeRepository.findByEmail(cleanId);
+    }
+
     @GetMapping("/status/{employeeId}")
-    public ResponseEntity<?> getAttendanceStatus(@PathVariable Long employeeId) {
+    public ResponseEntity<?> getAttendanceStatus(@PathVariable String employeeId) {
+        Optional<Employee> empOpt = findEmployee(employeeId);
+        if (empOpt.isEmpty()) {
+            return ResponseEntity.ok(Map.of("isCheckedIn", false));
+        }
+        Long id = empOpt.get().getId();
         LocalDate today = LocalDate.now();
-        Optional<Attendance> attOpt = attendanceRepository.findByEmployeeIdAndDate(employeeId, today);
+        Optional<Attendance> attOpt = attendanceRepository.findByEmployeeIdAndDate(id, today);
         if (attOpt.isPresent() && attOpt.get().getCheckInTime() != null && attOpt.get().getCheckOutTime() == null) {
             String checkInStr = attOpt.get().getCheckInTime().format(DateTimeFormatter.ofPattern("hh:mm a"));
             return ResponseEntity.ok(Map.of(
@@ -54,14 +76,20 @@ public class AttendanceController {
 
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<Map<String, Object>> getEmployeeAttendanceLogs(
-            @PathVariable Long employeeId,
+            @PathVariable String employeeId,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
 
+        Optional<Employee> empOpt = findEmployee(employeeId);
+        if (empOpt.isEmpty()) {
+            return ResponseEntity.ok(Map.of("logs", List.of(), "payableDaysInfo", Map.of("totalWorkingDays", 0, "presentDays", 0, "paidLeaveDays", 0, "payableDays", 0)));
+        }
+
+        Long id = empOpt.get().getId();
         LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
 
-        List<Attendance> logs = attendanceRepository.findByEmployeeIdAndDateBetween(employeeId, start, end);
+        List<Attendance> logs = attendanceRepository.findByEmployeeIdAndDateBetween(id, start, end);
         List<Map<String, Object>> logList = new ArrayList<>();
 
         for (Attendance a : logs) {
@@ -126,18 +154,19 @@ public class AttendanceController {
 
     @PostMapping("/check-in")
     public ResponseEntity<?> checkIn(@RequestBody Map<String, Object> body) {
-        Long employeeId = Long.valueOf(body.get("employeeId").toString());
-        Optional<Employee> empOpt = employeeRepository.findById(employeeId);
+        String empIdStr = body.get("employeeId") != null ? body.get("employeeId").toString() : "";
+        Optional<Employee> empOpt = findEmployee(empIdStr);
         if (empOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Employee not found"));
         }
 
+        Employee emp = empOpt.get();
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();
 
-        Attendance att = attendanceRepository.findByEmployeeIdAndDate(employeeId, today).orElseGet(() -> {
+        Attendance att = attendanceRepository.findByEmployeeIdAndDate(emp.getId(), today).orElseGet(() -> {
             Attendance a = new Attendance();
-            a.setEmployee(empOpt.get());
+            a.setEmployee(emp);
             a.setDate(today);
             return a;
         });
@@ -156,18 +185,38 @@ public class AttendanceController {
 
     @PostMapping("/check-out")
     public ResponseEntity<?> checkOut(@RequestBody Map<String, Object> body) {
-        Long employeeId = Long.valueOf(body.get("employeeId").toString());
-        Optional<Employee> empOpt = employeeRepository.findById(employeeId);
+        String empIdStr = body.get("employeeId") != null ? body.get("employeeId").toString() : "";
+        Optional<Employee> empOpt = findEmployee(empIdStr);
         if (empOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Employee not found"));
         }
 
+        Employee emp = empOpt.get();
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();
 
-        Optional<Attendance> attOpt = attendanceRepository.findByEmployeeIdAndDate(employeeId, today);
+        Optional<Attendance> attOpt = attendanceRepository.findByEmployeeIdAndDate(emp.getId(), today);
         if (attOpt.isEmpty() || attOpt.get().getCheckInTime() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Please check in first before checking out."));
+            // Auto check-in at start of day if missing check-in
+            Attendance a = attOpt.orElseGet(() -> {
+                Attendance newA = new Attendance();
+                newA.setEmployee(emp);
+                newA.setDate(today);
+                return newA;
+            });
+            a.setCheckInTime(now.minusHours(8));
+            a.setCheckOutTime(now);
+            a.setWorkHours(8.0);
+            a.setExtraHours(0.0);
+            a.setStatus(AttendanceStatus.PRESENT);
+            attendanceRepository.save(a);
+
+            String timeStr = now.format(DateTimeFormatter.ofPattern("hh:mm a"));
+            return ResponseEntity.ok(Map.of(
+                "message", "Checked out successfully at " + timeStr + " (8.0 hrs recorded)",
+                "checkOutTime", timeStr,
+                "workHours", "8.0h"
+            ));
         }
 
         Attendance att = attOpt.get();

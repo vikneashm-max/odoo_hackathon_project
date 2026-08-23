@@ -6,6 +6,7 @@ import { AdminApprovalsView } from './AdminApprovalsView';
 import { PayrollManagerView } from './PayrollManagerView';
 import { ProfileView } from './ProfileView';
 import { AddEmployeeModal, ViewProfileModal } from './Modals';
+import { Avatar } from './Avatar';
 import type {
   Employee,
   DailyAttendanceRecord,
@@ -113,12 +114,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span
                   style={{
                     marginLeft: '6px',
-                    backgroundColor: '#ef4444',
+                    backgroundColor: '#DC2626',
                     color: '#ffffff',
                     fontSize: '11px',
                     fontWeight: 700,
-                    padding: '1px 6px',
+                    padding: '2px 7px',
                     borderRadius: '10px',
+                    lineHeight: 1,
                   }}
                 >
                   {pendingApprovalsCount}
@@ -150,10 +152,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }}
           >
             <div className="avatar-wrapper">
-              <div className="avatar-circle purple-bg">
-                <span>AD</span>
-              </div>
-              <span className="avatar-status-dot"></span>
+              <Avatar name="Admin User" employee={{ avatarInitials: 'AD' }} size={38} showStatusDot />
             </div>
           </div>
 
@@ -165,53 +164,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Main Content Area */}
       <main className="main-content">
-        {activeTab === 'employees' && (
-          <EmployeesView
-            employees={employees}
-            onAddEmployeeClick={() => setIsAddEmpModalOpen(true)}
-            onViewProfileClick={(emp) => {
-              setSelectedProfileEmployee(emp);
-              setActiveTab('profile');
-            }}
-            isCheckedIn={isCheckedIn}
-            onToggleCheckIn={(status) => setIsCheckedIn(status)}
-          />
-        )}
+        <div className="tab-content-enter" key={activeTab}>
+          {activeTab === 'employees' && (
+            <EmployeesView
+              employees={employees}
+              onAddEmployeeClick={() => setIsAddEmpModalOpen(true)}
+              onViewProfileClick={(emp) => {
+                setSelectedProfileEmployee(emp);
+                setActiveTab('profile');
+              }}
+              isCheckedIn={isCheckedIn}
+              onToggleCheckIn={(status) => setIsCheckedIn(status)}
+            />
+          )}
 
-        {activeTab === 'attendance' && (
-          <DailyAttendanceView records={dailyAttendance} />
-        )}
+          {activeTab === 'attendance' && (
+            <DailyAttendanceView records={dailyAttendance} />
+          )}
 
-        {activeTab === 'approvals' && (
-          <AdminApprovalsView
-            leaveRequests={leaveRequests}
-            issues={issues}
-            onApproveLeave={onApproveLeave}
-            onRejectLeave={onRejectLeave}
-            onResolveIssue={onResolveIssue}
-            onRejectIssue={onRejectIssue}
-          />
-        )}
+          {activeTab === 'approvals' && (
+            <AdminApprovalsView
+              leaveRequests={leaveRequests}
+              issues={issues}
+              onApproveLeave={onApproveLeave}
+              onRejectLeave={onRejectLeave}
+              onResolveIssue={onResolveIssue}
+              onRejectIssue={onRejectIssue}
+            />
+          )}
 
-        {activeTab === 'payroll' && (
-          <PayrollManagerView
-            components={salaryComponents}
-            pfRate={pfRate}
-            profTax={profTax}
-            onUpdateSettings={onUpdatePayrollSettings}
-            onSaveComponent={onSaveSalaryComponent}
-          />
-        )}
+          {activeTab === 'payroll' && (
+            <PayrollManagerView
+              components={salaryComponents}
+              pfRate={pfRate}
+              profTax={profTax}
+              onUpdateSettings={onUpdatePayrollSettings}
+              onSaveComponent={onSaveSalaryComponent}
+            />
+          )}
 
-        {activeTab === 'profile' && selectedProfileEmployee && (
-          <ProfileView
-            employee={selectedProfileEmployee}
-            currentUserRole="admin"
-            currentUserId={currentUserId}
-            onSaveProfile={onSaveProfile}
-            onSaveSalary={onSaveSalary}
-          />
-        )}
+          {activeTab === 'profile' && selectedProfileEmployee && (
+            <ProfileView
+              employee={selectedProfileEmployee}
+              currentUserRole="admin"
+              currentUserId={currentUserId}
+              onSaveProfile={onSaveProfile}
+              onSaveSalary={onSaveSalary}
+            />
+          )}
+        </div>
       </main>
 
       {/* Modals */}
