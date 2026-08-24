@@ -6,7 +6,7 @@ interface TimeOffViewProps {
   balance: TimeOffBalance;
   leaveRequests?: LeaveRequestItem[];
   issues?: EmployeeIssue[];
-  onNewRequestClick: () => void;
+  onNewRequestClick: (initialDate?: string) => void;
 }
 
 export type ProcessStage = 'sent' | 'seen' | 'accepted' | 'rejected';
@@ -53,16 +53,38 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
 
   const calendarTiles: CalendarTileData[] = [];
 
-  // Helper to match dates
-  const isDateMatch = (targetDateStr: string, startDateStr: string, endDateStr?: string) => {
-    try {
-      const target = new Date(targetDateStr).getTime();
-      const start = new Date(startDateStr).getTime();
-      const end = endDateStr ? new Date(endDateStr).getTime() : start;
-      return target >= start && target <= end;
-    } catch (e) {
-      return targetDateStr === startDateStr;
+  // Helper to parse dates into timestamp regardless of DD-MM-YYYY or YYYY-MM-DD
+  const parseDateToTimestamp = (str?: string): number => {
+    if (!str) return 0;
+    const clean = str.trim();
+    if (clean.includes('-')) {
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 2) {
+          // DD-MM-YYYY format
+          const d = Number(parts[0]);
+          const m = Number(parts[1]);
+          const y = Number(parts[2]);
+          return new Date(y, m - 1, d).getTime();
+        } else if (parts[0].length === 4) {
+          // YYYY-MM-DD format
+          const y = Number(parts[0]);
+          const m = Number(parts[1]);
+          const d = Number(parts[2]);
+          return new Date(y, m - 1, d).getTime();
+        }
+      }
     }
+    const dt = new Date(clean);
+    return isNaN(dt.getTime()) ? 0 : dt.getTime();
+  };
+
+  const isDateMatch = (targetDateStr: string, startDateStr: string, endDateStr?: string) => {
+    const target = parseDateToTimestamp(targetDateStr);
+    const start = parseDateToTimestamp(startDateStr);
+    const end = endDateStr ? parseDateToTimestamp(endDateStr) : start;
+    if (target === 0 || start === 0) return false;
+    return target >= start && target <= end;
   };
 
   // Helper to map leave status to process stage
@@ -104,11 +126,15 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
     let requestItem: CalendarTileData['requestItem'];
 
     if (matchingLeave) {
+      const typeText = matchingLeave.leaveType === 'paid' ? 'Paid Leave' : 'Sick Leave';
+      const displayTitle = matchingLeave.reason && matchingLeave.reason.trim().length > 0
+        ? matchingLeave.reason
+        : typeText;
       requestItem = {
         type: 'leave',
-        title: matchingLeave.leaveType === 'paid' ? 'Paid Leave' : 'Sick Leave',
+        title: displayTitle,
         stage: getLeaveStage(matchingLeave.status),
-        details: matchingLeave.reason,
+        details: `${typeText}: ${matchingLeave.reason || 'No remarks'}`,
       };
     } else if (matchingIssue) {
       requestItem = {
@@ -155,7 +181,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
           <p>View your leave balances, calendar schedule, and request status timeline</p>
         </div>
 
-        <button className="btn-primary" onClick={onNewRequestClick}>
+        <button className="btn-primary" onClick={() => onNewRequestClick()}>
           <Plus size={18} />
           <span>New Request</span>
         </button>
@@ -291,7 +317,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
                       type: tile.requestItem.type,
                     });
                   } else if (!tile.isOtherMonth) {
-                    onNewRequestClick();
+                    onNewRequestClick(tile.fullDateStr);
                   }
                 }}
                 style={{ cursor: tile.isOtherMonth ? 'default' : 'pointer' }}
@@ -317,8 +343,22 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({
                 </div>
 
                 {tile.requestItem && (
-                  <div className="tile-request-details">
-                    <span className="tile-request-title">{tile.requestItem.title}</span>
+                  <div className="tile-request-details" style={{ marginTop: '4px' }}>
+                    <span
+                      className="tile-request-title"
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        lineHeight: 1.25,
+                      }}
+                      title={tile.requestItem.title}
+                    >
+                      {tile.requestItem.title}
+                    </span>
                   </div>
                 )}
               </div>

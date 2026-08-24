@@ -100,7 +100,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <input
                   type="text"
                   className="form-input with-left-icon"
-                  placeholder={loginType === 'admin' ? 'e.g. ADMIN001' : 'Enter your ID or email'}
+                  placeholder={loginType === 'admin' ? 'e.g. IN-AD-2026-0001 or admin@dayflow.com' : 'e.g. IN-SJ-2026-0001 or email'}
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   required

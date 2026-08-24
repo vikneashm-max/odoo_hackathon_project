@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bell, LayoutDashboard, LogOut, Users, Calendar, CheckSquare, DollarSign } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, LayoutDashboard, LogOut, Users, Calendar, CheckSquare, DollarSign, User, ChevronRight } from 'lucide-react';
 import { EmployeesView } from './EmployeesView';
 import { DailyAttendanceView } from './DailyAttendanceView';
 import { AdminApprovalsView } from './AdminApprovalsView';
@@ -25,6 +25,8 @@ interface AdminDashboardProps {
   salaryComponents: SalaryComponent[];
   pfRate: number;
   profTax: number;
+  isCheckedIn: boolean;
+  onToggleCheckIn?: (status: boolean) => void;
   onAddEmployee: (emp: Omit<Employee, 'id'>) => void;
   onSaveProfile: (empId: string, updatedData: Partial<Employee>) => Promise<void>;
   onSaveSalary: (empId: string, salaryData: Partial<SalaryStructure>) => Promise<void>;
@@ -46,6 +48,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   salaryComponents,
   pfRate,
   profTax,
+  isCheckedIn,
+  onToggleCheckIn,
   onAddEmployee,
   onSaveProfile,
   onSaveSalary,
@@ -60,7 +64,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'approvals' | 'payroll' | 'profile'>('employees');
   const [isAddEmpModalOpen, setIsAddEmpModalOpen] = useState(false);
   const [selectedProfileEmployee, setSelectedProfileEmployee] = useState<Employee | null>(null);
-  const [isCheckedIn, setIsCheckedIn] = useState<boolean>(true);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const pendingApprovalsCount =
     leaveRequests.filter((r) => r.status === 'Pending').length +
@@ -68,7 +83,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const currentAdminUser = employees.find((e) => e.id === currentUserId) || {
     id: currentUserId,
-    loginId: 'ADMIN001',
+    loginId: 'IN-AD-2026-0001',
     fullName: 'System Administrator',
     email: 'admin@dayflow.com',
     phone: '+91 98765 43210',
@@ -143,22 +158,146 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {pendingApprovalsCount > 0 && <span className="bell-badge"></span>}
           </button>
 
-          <div
-            className="user-avatar-btn"
-            title="Administrator Profile"
-            onClick={() => {
-              setSelectedProfileEmployee(currentAdminUser as Employee);
-              setActiveTab('profile');
-            }}
-          >
-            <div className="avatar-wrapper">
-              <Avatar name="Admin User" employee={{ avatarInitials: 'AD' }} size={38} showStatusDot />
+          <div className="profile-menu-wrapper" ref={profileMenuRef} style={{ position: 'relative' }}>
+            <div
+              className="user-avatar-btn"
+              title={currentAdminUser.fullName || 'Admin Profile'}
+              onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+            >
+              <div className="avatar-wrapper">
+                <Avatar employee={currentAdminUser as Employee} size={38} showStatusDot />
+              </div>
             </div>
-          </div>
 
-          <button className="icon-btn" title="Sign Out" onClick={onLogout} style={{ marginLeft: '4px' }}>
-            <LogOut size={18} />
-          </button>
+            {isProfileMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 12px)',
+                  right: 0,
+                  width: '300px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '16px',
+                  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)',
+                  overflow: 'hidden',
+                  zIndex: 60,
+                }}
+              >
+                {/* Header block with avatar, name, email */}
+                <div
+                  style={{
+                    padding: '28px 20px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    borderBottom: '1px solid #E5E7EB',
+                  }}
+                >
+                  <div style={{ marginBottom: '12px' }}>
+                    <Avatar employee={currentAdminUser as Employee} size={64} />
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>
+                    {currentAdminUser.fullName || 'System Administrator'}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
+                    {currentAdminUser.email || 'admin@dayflow.com'}
+                  </span>
+                </div>
+
+                {/* Menu items */}
+                <div style={{ padding: '8px' }}>
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setSelectedProfileEmployee(currentAdminUser as Employee);
+                      setActiveTab('profile');
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#111827',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <User size={17} color="#374151" />
+                    <span style={{ flex: 1 }}>My Profile & Settings</span>
+                    <ChevronRight size={15} color="#9CA3AF" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setActiveTab('employees');
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#111827',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Users size={17} color="#374151" />
+                    <span style={{ flex: 1 }}>Employees Directory</span>
+                    <ChevronRight size={15} color="#9CA3AF" />
+                  </button>
+                </div>
+
+                {/* Sign out footer */}
+                <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px' }}>
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onLogout();
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '12px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#DC2626',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#FEE2E2')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <LogOut size={17} color="#DC2626" />
+                    <span>Sign out of Dayflow HRMS</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -174,7 +313,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setActiveTab('profile');
               }}
               isCheckedIn={isCheckedIn}
-              onToggleCheckIn={(status) => setIsCheckedIn(status)}
+              onToggleCheckIn={(status) => onToggleCheckIn && onToggleCheckIn(status)}
             />
           )}
 

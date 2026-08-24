@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { formatDDMMYYYY } from '../services/api';
 import type { LeaveRequestItem, EmployeeIssue } from '../types';
 
 interface AdminApprovalsViewProps {
@@ -65,7 +66,7 @@ export const AdminApprovalsView: React.FC<AdminApprovalsViewProps> = ({
                           {req.leaveType === 'paid' ? 'Paid Time Off' : 'Sick Leave'}
                         </span>
                       </td>
-                      <td>{req.startDate} to {req.endDate}</td>
+                      <td>{formatDDMMYYYY(req.startDate)} to {formatDDMMYYYY(req.endDate)}</td>
                       <td style={{ maxWidth: '240px', color: '#4b5563' }}>{req.reason || 'N/A'}</td>
                       <td>
                         {req.status === 'Pending' && (
@@ -169,7 +170,7 @@ export const AdminApprovalsView: React.FC<AdminApprovalsViewProps> = ({
                         <div style={{ fontWeight: 600, color: '#111827', fontSize: '13px' }}>{issue.subject}</div>
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>{issue.description}</div>
                       </td>
-                      <td style={{ fontSize: '12px', color: '#6b7280' }}>{issue.submittedAt}</td>
+                      <td style={{ fontSize: '12px', color: '#6b7280' }}>{formatDDMMYYYY(issue.submittedAt)}</td>
                       <td>
                         {issue.status === 'Pending' && <span className="badge badge-late">Pending</span>}
                         {issue.status === 'Resolved' && <span className="badge badge-ontime">Resolved</span>}

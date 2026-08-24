@@ -4,7 +4,7 @@ import { EmployeePortal } from './components/EmployeePortal';
 import { LoginView } from './components/LoginView';
 import { SignUpView } from './components/SignUpView';
 import { Toast } from './components/Toast';
-import { apiService } from './services/api';
+import { apiService, formatDDMMYYYY } from './services/api';
 import type {
   AuthMode,
   UserRole,
@@ -73,13 +73,10 @@ function App() {
           setUserRole(user.role);
           setCurrentEmployee(user);
           setAuthMode('authenticated');
-          await fetchInitialData(user.id);
           if (user.role === 'employee') {
-            const statusRes = await apiService.getAttendanceStatus(user.id);
-            if (!statusRes || !statusRes.isCheckedIn) {
-              await handleToggleCheckIn(true, true);
-            }
+            await handleToggleCheckIn(true, true);
           }
+          await fetchInitialData(user.id);
         }
       } catch (err) {
         console.log('Session check complete.');
@@ -133,7 +130,6 @@ function App() {
     setCurrentUserId(userId);
     setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
-    await fetchInitialData(userId);
 
     if (role === 'employee') {
       await handleToggleCheckIn(true, true);
@@ -141,6 +137,7 @@ function App() {
     } else {
       showToast(`Signed in successfully as ${activeUser.fullName || activeUser.name || 'Admin'}.`);
     }
+    await fetchInitialData(userId);
   };
 
   const handleSignUpSuccess = async (user: any) => {
@@ -150,8 +147,8 @@ function App() {
     setCurrentUserId(userId);
     setCurrentEmployee(activeUser);
     setAuthMode('authenticated');
-    await fetchInitialData(userId);
     await handleToggleCheckIn(true, true);
+    await fetchInitialData(userId);
     showToast('Employee account created! Automatically checked in for work.');
   };
 
@@ -242,7 +239,7 @@ function App() {
     } catch (err) {
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+      const dateStr = formatDDMMYYYY(now);
 
       if (status) {
         const newRecord: PersonalAttendanceRecord = {
@@ -264,6 +261,18 @@ function App() {
         );
         if (!isSilent) showToast(`Check-out recorded at ${timeStr}`);
       }
+    } finally {
+      const activeId = currentUserId || (await apiService.getCurrentUser())?.id;
+      if (activeId) {
+        const attLogs = await apiService.getAttendanceLogs(activeId);
+        if (attLogs && attLogs.logs) {
+          setPersonalAttendance(attLogs.logs);
+        }
+        const statusRes = await apiService.getAttendanceStatus(activeId);
+        if (statusRes && typeof statusRes.isCheckedIn === 'boolean') {
+          setIsCheckedIn(statusRes.isCheckedIn);
+        }
+      }
     }
   };
 
@@ -277,12 +286,12 @@ function App() {
         id: `req-${Date.now()}`,
         employeeName: currentEmployee.fullName,
         leaveType: req.leaveType,
-        startDate: req.startDate,
-        endDate: req.endDate,
+        startDate: formatDDMMYYYY(req.startDate),
+        endDate: formatDDMMYYYY(req.endDate),
         reason: req.reason,
         attachmentFileName: req.attachmentFileName,
         status: 'Pending',
-        submittedAt: new Date().toLocaleDateString(),
+        submittedAt: formatDDMMYYYY(new Date()),
       };
       setLeaveRequests((prev) => [newLeaveItem, ...prev]);
       showToast('Time Off request submitted. Status: Pending Admin Approval');
@@ -387,6 +396,8 @@ function App() {
           salaryComponents={salaryComponents}
           pfRate={pfRate}
           profTax={profTax}
+          isCheckedIn={isCheckedIn}
+          onToggleCheckIn={handleToggleCheckIn}
           onAddEmployee={handleAddEmployee}
           onSaveProfile={handleSaveProfile}
           onSaveSalary={handleSaveSalary}

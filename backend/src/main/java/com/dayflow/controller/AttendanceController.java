@@ -58,20 +58,32 @@ public class AttendanceController {
     public ResponseEntity<?> getAttendanceStatus(@PathVariable String employeeId) {
         Optional<Employee> empOpt = findEmployee(employeeId);
         if (empOpt.isEmpty()) {
-            return ResponseEntity.ok(Map.of("isCheckedIn", false));
+            return ResponseEntity.ok(Map.of("isCheckedIn", true));
         }
         Long id = empOpt.get().getId();
         LocalDate today = LocalDate.now();
-        Optional<Attendance> attOpt = attendanceRepository.findByEmployeeIdAndDate(id, today);
-        if (attOpt.isPresent() && attOpt.get().getCheckInTime() != null && attOpt.get().getCheckOutTime() == null) {
-            String checkInStr = attOpt.get().getCheckInTime().format(DateTimeFormatter.ofPattern("hh:mm a"));
-            return ResponseEntity.ok(Map.of(
-                "isCheckedIn", true,
-                "checkInTime", checkInStr,
-                "status", attOpt.get().getStatus().name()
-            ));
+        LocalDateTime now = LocalDateTime.now();
+
+        Attendance att = attendanceRepository.findByEmployeeIdAndDate(id, today).orElseGet(() -> {
+            Attendance a = new Attendance();
+            a.setEmployee(empOpt.get());
+            a.setDate(today);
+            return a;
+        });
+
+        if (att.getCheckInTime() == null || att.getCheckOutTime() != null) {
+            att.setCheckInTime(now);
+            att.setCheckOutTime(null);
+            att.setStatus(AttendanceStatus.PRESENT);
+            attendanceRepository.save(att);
         }
-        return ResponseEntity.ok(Map.of("isCheckedIn", false));
+
+        String checkInStr = att.getCheckInTime().format(DateTimeFormatter.ofPattern("hh:mm a"));
+        return ResponseEntity.ok(Map.of(
+            "isCheckedIn", true,
+            "checkInTime", checkInStr,
+            "status", att.getStatus().name()
+        ));
     }
 
     @GetMapping("/employee/{employeeId}")
@@ -86,19 +98,42 @@ public class AttendanceController {
         }
 
         Long id = empOpt.get().getId();
-        LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
-        LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+        LocalDate today = LocalDate.now();
 
-        List<Attendance> logs = attendanceRepository.findByEmployeeIdAndDateBetween(id, start, end);
+        // Automatically ensure today's attendance record exists and user is checked in
+        Optional<Attendance> todayAtt = attendanceRepository.findByEmployeeIdAndDate(id, today);
+        if (todayAtt.isEmpty()) {
+            Attendance a = new Attendance();
+            a.setEmployee(empOpt.get());
+            a.setDate(today);
+            a.setCheckInTime(LocalDateTime.now());
+            a.setStatus(AttendanceStatus.PRESENT);
+            attendanceRepository.save(a);
+        } else if (todayAtt.get().getCheckInTime() == null) {
+            Attendance a = todayAtt.get();
+            a.setCheckInTime(LocalDateTime.now());
+            a.setStatus(AttendanceStatus.PRESENT);
+            attendanceRepository.save(a);
+        }
+
+        List<Attendance> logs;
+        if (startDate != null || endDate != null) {
+            LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
+            LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+            logs = attendanceRepository.findByEmployeeIdAndDateBetween(id, start, end);
+        } else {
+            logs = attendanceRepository.findByEmployeeIdOrderByDateDesc(id);
+        }
+
         List<Map<String, Object>> logList = new ArrayList<>();
 
         for (Attendance a : logs) {
             Map<String, Object> map = new HashMap<>();
             map.put("id", String.valueOf(a.getId()));
-            map.put("date", a.getDate().toString());
+            map.put("date", a.getDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
             map.put("checkIn", a.getCheckInTime() != null ? a.getCheckInTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "--:--");
             map.put("checkOut", a.getCheckOutTime() != null ? a.getCheckOutTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "--:--");
-            map.put("workHours", a.getWorkHours() != null ? a.getWorkHours() + "h" : "0h");
+            map.put("workHours", a.getCheckOutTime() == null ? "Active" : (a.getWorkHours() != null ? a.getWorkHours() + "h" : "0h"));
             map.put("extraHours", a.getExtraHours() != null ? a.getExtraHours() + "h" : "0h");
             map.put("status", a.getStatus() != null ? a.getStatus().name() : "PRESENT");
             logList.add(map);
@@ -136,7 +171,7 @@ public class AttendanceController {
                 Attendance a = attOpt.get();
                 map.put("checkIn", a.getCheckInTime() != null ? a.getCheckInTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "--:--");
                 map.put("checkOut", a.getCheckOutTime() != null ? a.getCheckOutTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "--:--");
-                map.put("workHours", a.getWorkHours() != null ? a.getWorkHours() + "h" : "0h");
+                map.put("workHours", a.getCheckOutTime() == null && a.getCheckInTime() != null ? "Active" : (a.getWorkHours() != null ? a.getWorkHours() + "h" : "0h"));
                 map.put("extraHours", a.getExtraHours() != null ? a.getExtraHours() + "h" : "0h");
                 map.put("status", a.getStatus() != null ? a.getStatus().name() : "PRESENT");
             } else {
@@ -172,6 +207,7 @@ public class AttendanceController {
         });
 
         att.setCheckInTime(now);
+        att.setCheckOutTime(null);
         att.setStatus(AttendanceStatus.PRESENT);
         attendanceRepository.save(att);
 

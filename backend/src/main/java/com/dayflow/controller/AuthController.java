@@ -1,5 +1,7 @@
 package com.dayflow.controller;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -12,12 +14,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dayflow.entity.Attendance;
 import com.dayflow.entity.Company;
 import com.dayflow.entity.Employee;
 import com.dayflow.entity.LeaveBalance;
 import com.dayflow.entity.SalaryStructure;
+import com.dayflow.entity.enums.AttendanceStatus;
 import com.dayflow.entity.enums.Role;
 import com.dayflow.entity.enums.WageType;
+import com.dayflow.repository.AttendanceRepository;
 import com.dayflow.repository.CompanyRepository;
 import com.dayflow.repository.EmployeeRepository;
 import com.dayflow.repository.LeaveBalanceRepository;
@@ -36,6 +41,7 @@ public class AuthController {
     private final CompanyRepository companyRepository;
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final SalaryStructureRepository salaryStructureRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -54,6 +60,23 @@ public class AuthController {
         }
 
         Employee employee = empOpt.get();
+
+        // Auto check-in on login to record attendance in database
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+        Attendance att = attendanceRepository.findByEmployeeIdAndDate(employee.getId(), today).orElseGet(() -> {
+            Attendance a = new Attendance();
+            a.setEmployee(employee);
+            a.setDate(today);
+            return a;
+        });
+
+        if (att.getCheckInTime() == null || att.getCheckOutTime() != null) {
+            att.setCheckInTime(now);
+            att.setCheckOutTime(null);
+            att.setStatus(AttendanceStatus.PRESENT);
+            attendanceRepository.save(att);
+        }
 
         Map<String, Object> userMap = buildUserMap(employee);
         String token = "dayflow-jwt-token-" + employee.getId() + "-" + System.currentTimeMillis();

@@ -63,7 +63,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // 2. Seed Admin Employee
         Employee admin = new Employee();
-        admin.setLoginId("ADMIN001");
+        admin.setLoginId("IN-AD-2026-0001");
         admin.setFirstName("System");
         admin.setLastName("Administrator");
         admin.setEmail("admin@dayflow.com");
@@ -91,22 +91,28 @@ public class DatabaseSeeder implements CommandLineRunner {
         seedSkillsAndCertifications(emp2, "UI/UX Design", "Figma", "Design Systems", "Certified UX Professional");
         seedSkillsAndCertifications(emp3, "Python", "SQL", "Tableau", "Google Data Engineer");
 
-        // 5. Seed Attendance for past 7 days
+        List<Employee> allEmployees = Arrays.asList(admin, emp1, emp2, emp3);
+
+        // 5. Seed Attendance for past 7 days including today
         LocalDate today = LocalDate.now();
-        for (Employee emp : sampleEmployees) {
+        for (Employee emp : allEmployees) {
             for (int i = 6; i >= 0; i--) {
                 LocalDate date = today.minusDays(i);
-                if (date.getDayOfWeek().getValue() <= 5) { // Weekdays
-                    Attendance att = new Attendance();
-                    att.setEmployee(emp);
-                    att.setDate(date);
-                    att.setCheckInTime(date.atTime(9, 0));
+                Attendance att = new Attendance();
+                att.setEmployee(emp);
+                att.setDate(date);
+                att.setCheckInTime(date.atTime(9, 0));
+                if (i == 0) {
+                    att.setCheckOutTime(null);
+                    att.setWorkHours(null);
+                    att.setExtraHours(0.0);
+                } else {
                     att.setCheckOutTime(date.atTime(18, 0));
                     att.setWorkHours(8.0);
                     att.setExtraHours(1.0);
-                    att.setStatus(AttendanceStatus.PRESENT);
-                    attendanceRepository.save(att);
                 }
+                att.setStatus(AttendanceStatus.PRESENT);
+                attendanceRepository.save(att);
             }
         }
 

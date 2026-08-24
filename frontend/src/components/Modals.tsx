@@ -1,9 +1,315 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Mail, Phone, Calendar, Briefcase, AlertCircle, Paperclip } from 'lucide-react';
 import { Avatar } from './Avatar';
 import type { Employee, NewTimeOffRequest, EmployeeIssue } from '../types';
 
-/* Add Employee Modal (Admin Only) */
+/* Formatted Date Input showing DD-MM-YYYY */
+interface FormattedDateInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  min?: string;
+  required?: boolean;
+}
+
+export const FormattedDateInput: React.FC<FormattedDateInputProps> = ({
+  value,
+  onChange,
+  min,
+  required,
+}) => {
+  const hiddenPickerRef = useRef<HTMLInputElement>(null);
+
+  const toDisplay = (str: string) => {
+    if (!str) return '';
+    if (str.includes('-') && str.split('-')[0].length === 2) return str;
+    const parts = str.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return str;
+  };
+
+  const toIso = (str: string) => {
+    if (!str) return '';
+    const parts = str.split('-');
+    if (parts.length === 3 && parts[0].length === 2) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return str;
+  };
+
+  const displayVal = toDisplay(value);
+
+  const handleOpenPicker = () => {
+    if (hiddenPickerRef.current) {
+      try {
+        if ('showPicker' in (hiddenPickerRef.current as any)) {
+          (hiddenPickerRef.current as any).showPicker();
+        } else {
+          (hiddenPickerRef.current as any)?.focus();
+        }
+      } catch (e) {
+        hiddenPickerRef.current.click();
+      }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+      <input
+        type="text"
+        className="form-input"
+        placeholder="DD-MM-YYYY"
+        value={displayVal}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        style={{ paddingRight: '40px', fontWeight: 600, letterSpacing: '0.02em' }}
+      />
+      <button
+        type="button"
+        onClick={handleOpenPicker}
+        style={{
+          position: 'absolute',
+          right: '8px',
+          background: 'transparent',
+          border: 'none',
+          color: 'var(--primary)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '6px',
+          borderRadius: '6px',
+        }}
+        title="Open Calendar Picker"
+      >
+        <Calendar size={18} />
+      </button>
+      <input
+        type="date"
+        ref={hiddenPickerRef}
+        value={toIso(value)}
+        min={min ? toIso(min) : undefined}
+        onChange={(e) => {
+          if (e.target.value) {
+            onChange(e.target.value);
+          }
+        }}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: '1px',
+          height: '1px',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  );
+};
+
+/* New Time Off Request Modal */
+interface NewTimeOffModalProps {
+  isOpen: boolean;
+  initialDate?: string;
+  onClose: () => void;
+  onSubmitRequest: (req: NewTimeOffRequest) => void;
+}
+
+export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
+  isOpen,
+  initialDate,
+  onClose,
+  onSubmitRequest,
+}) => {
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const [leaveType, setLeaveType] = useState<'paid' | 'sick'>('paid');
+  const [startDate, setStartDate] = useState(initialDate || getTodayStr());
+  const [endDate, setEndDate] = useState(initialDate || getTodayStr());
+  const [reason, setReason] = useState('');
+  const [attachmentFileName, setAttachmentFileName] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const defaultDate = initialDate || getTodayStr();
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
+      setReason('');
+      setAttachmentFileName('');
+    }
+  }, [isOpen, initialDate]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmitRequest({
+      leaveType,
+      startDate: startDate || getTodayStr(),
+      endDate: endDate || startDate || getTodayStr(),
+      reason,
+      attachmentFileName: attachmentFileName || (leaveType === 'sick' ? 'medical_note.pdf' : undefined),
+    });
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Apply for Time Off</h3>
+          <button className="modal-close-btn" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Leave Category</label>
+            <select
+              className="form-select"
+              value={leaveType}
+              onChange={(e) => setLeaveType(e.target.value as 'paid' | 'sick')}
+            >
+              <option value="paid">Paid Time Off (PTO)</option>
+              <option value="sick">Sick Leave</option>
+            </select>
+          </div>
+
+          {/* Quick Date Selection Presets */}
+          <div style={{ marginBottom: '14px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+              Quick Selection Presets:
+            </span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-outline"
+                style={{ padding: '4px 10px', fontSize: '12px', height: 'auto', minWidth: 'unset' }}
+                onClick={() => {
+                  const today = getTodayStr();
+                  setStartDate(today);
+                  setEndDate(today);
+                }}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                style={{ padding: '4px 10px', fontSize: '12px', height: 'auto', minWidth: 'unset' }}
+                onClick={() => {
+                  const tom = new Date();
+                  tom.setDate(tom.getDate() + 1);
+                  const tomStr = tom.toISOString().split('T')[0];
+                  setStartDate(tomStr);
+                  setEndDate(tomStr);
+                }}
+              >
+                Tomorrow
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                style={{ padding: '4px 10px', fontSize: '12px', height: 'auto', minWidth: 'unset' }}
+                onClick={() => {
+                  const s = getTodayStr();
+                  const e = new Date();
+                  e.setDate(e.getDate() + 2);
+                  setStartDate(s);
+                  setEndDate(e.toISOString().split('T')[0]);
+                }}
+              >
+                Next 3 Days
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                style={{ padding: '4px 10px', fontSize: '12px', height: 'auto', minWidth: 'unset' }}
+                onClick={() => {
+                  const s = getTodayStr();
+                  const e = new Date();
+                  e.setDate(e.getDate() + 6);
+                  setStartDate(s);
+                  setEndDate(e.toISOString().split('T')[0]);
+                }}
+              >
+                Next 7 Days
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="form-group">
+              <label>Start Date (DD-MM-YYYY) *</label>
+              <FormattedDateInput
+                value={startDate}
+                onChange={(newStart) => {
+                  setStartDate(newStart);
+                  if (!endDate || newStart > endDate) {
+                    setEndDate(newStart);
+                  }
+                }}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>End Date (DD-MM-YYYY) *</label>
+              <FormattedDateInput
+                value={endDate}
+                min={startDate}
+                onChange={(newEnd) => setEndDate(newEnd)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Remarks / Reason</label>
+            <textarea
+              className="form-textarea"
+              rows={3}
+              placeholder="Briefly describe your request..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            ></textarea>
+          </div>
+
+          {leaveType === 'sick' && (
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Paperclip size={14} color="#6d28d9" />
+                <span>Medical Attachment (Required for Sick Leave)</span>
+              </label>
+              <input
+                type="file"
+                className="form-input"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={(e) => setAttachmentFileName(e.target.files?.[0]?.name || '')}
+              />
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={onClose}
+              style={{ width: 'auto' }}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Submit Leave Application
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -224,22 +530,37 @@ export const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ employee, on
           </span>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #f3f0f7', paddingTop: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#374151' }}>
-            <Briefcase size={16} color="#6d28d9" />
-            <span><strong>Department:</strong> {employee.department}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--text-primary)' }}>
+            <Briefcase size={20} color="var(--primary)" />
+            <div>
+              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>DEPARTMENT</span>
+              <strong>{employee.department || 'Engineering'}</strong>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#374151' }}>
-            <Mail size={16} color="#6d28d9" />
-            <span><strong>Email:</strong> {employee.email}</span>
+
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--text-primary)' }}>
+            <Calendar size={20} color="var(--primary)" />
+            <div>
+              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>JOIN DATE</span>
+              <strong>{employee.joinDate || '2026-01-01'}</strong>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#374151' }}>
-            <Phone size={16} color="#6d28d9" />
-            <span><strong>Phone:</strong> {employee.phone}</span>
+
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--text-primary)', gridColumn: 'span 2' }}>
+            <Mail size={20} color="var(--primary)" />
+            <div>
+              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>EMAIL ADDRESS</span>
+              <strong>{employee.email || 'employee@dayflow.com'}</strong>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#374151' }}>
-            <Calendar size={16} color="#6d28d9" />
-            <span><strong>Join Date:</strong> {employee.joinDate}</span>
+
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--text-primary)', gridColumn: 'span 2' }}>
+            <Phone size={20} color="var(--primary)" />
+            <div>
+              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>PHONE NUMBER</span>
+              <strong>{employee.phone || '+91 98765 43210'}</strong>
+            </div>
           </div>
         </div>
 
@@ -253,128 +574,7 @@ export const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ employee, on
   );
 };
 
-/* New Time Off Request Modal */
-interface NewTimeOffModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmitRequest: (req: NewTimeOffRequest) => void;
-}
 
-export const NewTimeOffModal: React.FC<NewTimeOffModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmitRequest,
-}) => {
-  const [leaveType, setLeaveType] = useState<'paid' | 'sick'>('paid');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [reason, setReason] = useState('');
-  const [attachmentFileName, setAttachmentFileName] = useState('');
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmitRequest({
-      leaveType,
-      startDate,
-      endDate,
-      reason,
-      attachmentFileName: attachmentFileName || (leaveType === 'sick' ? 'medical_note.pdf' : undefined),
-    });
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Apply for Time Off</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Leave Category</label>
-            <select
-              className="form-select"
-              value={leaveType}
-              onChange={(e) => setLeaveType(e.target.value as 'paid' | 'sick')}
-            >
-              <option value="paid">Paid Time Off (PTO)</option>
-              <option value="sick">Sick Leave</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label>Start Date *</label>
-              <input
-                type="date"
-                className="form-input"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>End Date *</label>
-              <input
-                type="date"
-                className="form-input"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Remarks / Reason</label>
-            <textarea
-              className="form-textarea"
-              rows={3}
-              placeholder="Briefly describe your request..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            ></textarea>
-          </div>
-
-          {leaveType === 'sick' && (
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Paperclip size={14} color="#6d28d9" />
-                <span>Medical Attachment (Required for Sick Leave)</span>
-              </label>
-              <input
-                type="file"
-                className="form-input"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={(e) => setAttachmentFileName(e.target.files?.[0]?.name || '')}
-              />
-            </div>
-          )}
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="btn-outline"
-              onClick={onClose}
-              style={{ width: 'auto' }}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              Submit Leave Application
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 /* New Employee Issue / Help Desk Ticket Modal */
 interface NewIssueModalProps {

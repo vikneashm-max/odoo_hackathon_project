@@ -12,5 +12,6 @@ import com.dayflow.entity.Attendance;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByEmployeeIdAndDateBetween(Long employeeId, LocalDate startDate, LocalDate endDate);
+    List<Attendance> findByEmployeeIdOrderByDateDesc(Long employeeId);
     Optional<Attendance> findByEmployeeIdAndDate(Long employeeId, LocalDate date);
 }

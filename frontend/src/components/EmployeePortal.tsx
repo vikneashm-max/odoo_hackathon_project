@@ -5,6 +5,7 @@ import { TimeOffView } from './TimeOffView';
 import { ProfileView } from './ProfileView';
 import { NewTimeOffModal, NewIssueModal } from './Modals';
 import { Avatar } from './Avatar';
+import { formatDDMMYYYY } from '../services/api';
 import type {
   Employee,
   PersonalAttendanceRecord,
@@ -44,6 +45,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
   const [activeTab, setActiveTab] = useState<'my_attendance' | 'timeoff_and_issues' | 'profile'>('my_attendance');
   const [isTimeOffModalOpen, setIsTimeOffModalOpen] = useState(false);
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [selectedLeaveDate, setSelectedLeaveDate] = useState<string | undefined>();
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -340,7 +342,10 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                 balance={timeOffBalance}
                 leaveRequests={safeLeaveRequests}
                 issues={safeIssues}
-                onNewRequestClick={() => setIsTimeOffModalOpen(true)}
+                onNewRequestClick={(dateStr) => {
+                  setSelectedLeaveDate(dateStr);
+                  setIsTimeOffModalOpen(true);
+                }}
               />
 
               {/* Activity Table */}
@@ -370,8 +375,8 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                                   {l.leaveType === 'paid' ? 'Paid Leave' : 'Sick Leave'}
                                 </span>
                               </td>
-                              <td>{l.startDate} to {l.endDate} ({l.reason || 'No reason provided'})</td>
-                              <td>{l.submittedAt}</td>
+                              <td>{formatDDMMYYYY(l.startDate)} to {formatDDMMYYYY(l.endDate)} ({l.reason || 'No reason provided'})</td>
+                              <td>{formatDDMMYYYY(l.submittedAt)}</td>
                               <td>
                                 <span className={`process-badge badge-stage-${stage}`}>
                                   {stage === 'accepted' ? 'Accepted ✓' : stage === 'rejected' ? 'Rejected ✕' : 'Sent ↗'}
@@ -391,7 +396,7 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
                               <td>
                                 <strong>{issue.subject}</strong> - {issue.description}
                               </td>
-                              <td>{issue.submittedAt}</td>
+                              <td>{formatDDMMYYYY(issue.submittedAt)}</td>
                               <td>
                                 <span className={`process-badge badge-stage-${stage}`}>
                                   {stage === 'accepted' ? 'Accepted ✓' : stage === 'rejected' ? 'Rejected ✕' : stage === 'seen' ? 'Seen 👁' : 'Sent ↗'}
@@ -430,7 +435,11 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
       {/* Modals */}
       <NewTimeOffModal
         isOpen={isTimeOffModalOpen}
-        onClose={() => setIsTimeOffModalOpen(false)}
+        initialDate={selectedLeaveDate}
+        onClose={() => {
+          setIsTimeOffModalOpen(false);
+          setSelectedLeaveDate(undefined);
+        }}
         onSubmitRequest={onNewTimeOffRequest}
       />
 
